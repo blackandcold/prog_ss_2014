@@ -1,3 +1,4 @@
+#JAVA
 *.class
 
 # Mobile Tools for Java (J2ME)
@@ -10,3 +11,42 @@
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
+
+#HASKEL
+dist
+cabal-dev
+*.o
+*.hi
+*.chi
+*.chs.h
+.virtualenv
+.hsenv
+.cabal-sandbox/
+cabal.sandbox.config
+cabal.config
+
+#PHP
+
+app/config/parameters.ini
+web/bundles/
+app/bootstrap.php.cache
+app/cache/*
+app/logs/*
+build/
+vendor
+composer.phar
+
+#OSX
+*~
+*.lock
+*.DS_Store
+*.swp
+*.out
+
+#IDE
+nbproject/
+.idea/
+*.tmproj
+.project
+.settings
+.classpath
