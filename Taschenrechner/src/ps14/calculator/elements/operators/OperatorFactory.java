@@ -3,7 +3,11 @@ package ps14.calculator.elements.operators;
 import ps14.calculator.elements.IElement;
 
 public class OperatorFactory {
-	
+	/**
+	 * Returns a new operator represented by the given char code.
+	 * If no such operator exists, null is returned.
+	 * @param op The character representing the operator
+	 */
 	public static IElement getOperator(char op) {
 		switch(op) {
 			case ApplyOperator.OPERATOR:

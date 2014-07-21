@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
+import ps14.calculator.elements.BlockElement;
 import ps14.calculator.elements.IElement;
+import ps14.calculator.elements.IntegerElement;
 
 public class Context {
 	private Stack<IElement> dataStack, codeStack;
@@ -26,6 +28,29 @@ public class Context {
 	public Stack<IElement> getCodeStack() {
 		return codeStack;
 	}
+	
+	
+	public IntegerElement nextInt() {
+		if (dataStack.size() > 0) {
+			IElement element = dataStack.peek();
+			if (element instanceof IntegerElement)
+				return (IntegerElement) dataStack.pop();
+		}
+		
+		throw new CalculatorException("Expected Integer on data stack");
+	}
+	
+	public BlockElement nextBlock() {
+		if (dataStack.size() > 0) {
+			IElement element = dataStack.peek();
+			if (element instanceof BlockElement)
+				return (BlockElement) dataStack.pop();
+		}
+		
+		throw new CalculatorException("Expected Block on data stack");
+	}
+	
+	
 	
 	@Override
 	public String toString() {

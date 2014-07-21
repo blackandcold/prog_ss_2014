@@ -1,6 +1,7 @@
 package ps14.calculator.elements;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -8,6 +9,13 @@ import ps14.calculator.Context;
 
 public class BlockElement implements IElement {
 	private List<IElement> elements = new ArrayList<>();
+	
+	public BlockElement() {
+    }
+	
+	public BlockElement(Collection<IElement> elements) {
+		this.elements.addAll(elements);
+	}
 	
 	@Override
 	public void apply(Context ctxt) {
