@@ -115,6 +115,20 @@ public class BuilderTest extends AbstractCalculatorTest {
 	}
 	
 	@Test
+	public void test_checkTopOfStackOperator() {
+		expect("1 2 " + Builder.checkTopOfStackOperator(new int[]{1, 2}), "1 ^");
+		expect(0xDEAD + " " + 0xC0DE + Builder.checkTopOfStackOperator(new int[]{0xDEAD, 0xBEEF}), "0 ^");
+		expect("7 " + 0xDEAD + " " + 0xBEEF + Builder.checkTopOfStackOperator(new int[]{0xDEAD, 0xBEEF}), "7 1 ^");
+	}
+	
+	@Test
+	public void test_deleteUntilOperator() {
+		expect("1 2 3 4 5 6 " + Builder.deleteUntilOperator(new int[]{4}), "1 2 3 4 ^");
+		expect("1 2 3 4 5 6 " + Builder.deleteUntilOperator(new int[]{6}), "1 2 3 4 5 6 ^");
+		expect("1 2 3 4 5 6 " + Builder.deleteUntilOperator(new int[]{1}), "1 ^");
+	}
+	
+	@Test
 	public void test_mostSignificantDigitOperator() {
 		expect("0" + Builder.mostSignificantDigitOperator(), "0 ^");
 		expect("5~" + Builder.mostSignificantDigitOperator(), "5 ^");

@@ -51,6 +51,7 @@ public class Builder {
 	 * @param position of stack item to move up
 	 */
 	public static String MoveToTop(int position) {
+		if (position == 1) return "";
 		return "["+position + "c" + (position+1) + "d]a";
 	}
 	
@@ -157,6 +158,36 @@ public class Builder {
 		p = If("1c0>", "~", "") + p;
 		
 		return "[" + p + "]a";
+	}
+	
+	/**
+	 * Put 1 on the stack if the top of the stack consists of the given values
+	 */
+	public static String checkTopOfStackOperator(int[] values) {
+		String p = "";
+		for (int value : values) {
+			p += MoveToTop(values.length);
+			p += value;
+			p += "=";
+		}
+		for (int i = 0; i < values.length-1; i++) {
+			p += "&";
+		}
+		return "[" + p + "]a";
+	}
+	
+	public static String deleteUntilOperator(int[] values) {
+		String p = "";
+		
+		String condition = "";
+		for (int i = 0; i < values.length; i++) {
+			condition += (values.length+1)+ "c";
+		}
+		condition += checkTopOfStackOperator(values);
+		condition += "0=";
+		
+		p += While(condition, "2d");
+		return p;
 	}
 	
 	/**

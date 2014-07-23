@@ -141,14 +141,29 @@ public class UIBuilder {
 	
 	private String execute(int bp) {
 		String p = "";
+		
 		String exec = "";
 		
+		// magic values, so that we can clean up leftover state from the executed command
+		int[] magicValues = new int[] { 0xbad1dea, 0xdead, 0xbeef };
+		for (int value : magicValues) {
+			exec += " " + value;
+		}
+		
+		// move buffer to top
+		exec += Builder.MoveToTop(bp-bpBuffer+3);
+		
 		// clear buffer
-		exec += Builder.MoveToTop(bp-bpBuffer);
 		exec += "[]";
-		exec += Builder.MoveDown(bp-bpBuffer+1);
+		exec += Builder.MoveDown(bp-bpBuffer+4);
 		
 		exec += "a"; // apply it!
+		
+		exec += Builder.deleteUntilOperator(magicValues);
+		for (int i = 0; i < magicValues.length; i++) {
+			exec += "1d";
+		}
+		
 		exec += "10w"; // newline
 		
 		// check if brackets are balanced

@@ -18,7 +18,12 @@ public class UITest extends AbstractCalculatorTest {
 	
 	@Test
 	public void test_ui_write() {
-		expect(ui, null, "90 7 + w", "a\n");
+		expect(ui, null, "97w", "a\n");
+	}
+	
+	@Test
+	public void test_ui_block() {
+		expect(ui, null, "[]\n97w", "\na\n");
 	}
 	
 	@Test
