@@ -92,7 +92,7 @@ public class Builder {
 	public static String digitCountOperator() {
 		String p = "";
 		
-		p += If("1c0>", "1~*", "");
+		p += If("1c0>", "~", "");
 		p += "1"; // starting count at 1
 		p += While(
 				  "3c" // number 
@@ -154,7 +154,7 @@ public class Builder {
 		p += "/";
 		
 		p = If("1c10>", "", p);
-		p = If("1c0>", "1~*"+p, p);
+		p = If("1c0>", "~", "") + p;
 		
 		return "[" + p + "]a";
 	}
@@ -196,9 +196,24 @@ public class Builder {
 	 * and puts the read number onto the data stack
 	 */
 	public static String readNumber() {
-		String p = "0";
-		p += While("r1c3c4d2c3d" + checkIfDigit(), "2c3d" + parseDigit() + "3c4d10*+2c3d");
-		p += "1d";
+		String p = "0 1 1";
+		p += While("2c",
+				  "r" // read char
+				+ If("1c" + (int)'-' + "=", // if it is a minus sign
+						"1d" // delete -
+						+ MoveToTop(3) // get multiplier
+						+ "~" // negate it
+						+ MoveDown(3), // move multiplier back
+						
+						If("1c" + checkIfDigit(), // if it is a digit
+								  parseDigit()
+								+ MoveToTop(5) 
+								+ "10*+" // append digits
+								+ MoveDown(4),
+								"1d2d0 2c3d"))
+				//"r1c3c4d2c3d" + checkIfDigit(), "2c3d" + parseDigit() + "3c4d10*+2c3d"
+			);
+		p += "1d*";
 		return "["+p+"]a";
 	}
 }

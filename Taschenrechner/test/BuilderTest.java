@@ -84,6 +84,7 @@ public class BuilderTest extends AbstractCalculatorTest {
 	@Test
 	public void test_readNumber() {
 		expect(Builder.readNumber(), "123 ^", "123", null);
+		expect(Builder.readNumber(), "-42 ^", "-42", null);
 	}
 	
 	@Test
