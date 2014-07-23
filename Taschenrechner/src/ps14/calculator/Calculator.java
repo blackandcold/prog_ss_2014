@@ -7,6 +7,8 @@ import java.nio.file.Paths;
 import ps14.calculator.elements.operators.ExitOperator;
 import ps14.calculator.parser.ParseException;
 import ps14.calculator.parser.Parser;
+import ps14.calculator.streams.GUIDisplay;
+import ps14.calculator.streams.IStream;
 import ps14.calculator.streams.StdOutStream;
 
 public class Calculator {
@@ -74,28 +76,39 @@ public class Calculator {
 	
 	
 	public static void main(String[] args) {
-	    if (args.length == 0) {
-	    	System.out.println("USAGE: java " + Calculator.class.getName() + " inputfile");
-	    	return;
+	    IStream outStream;
+	    
+	    int arg = 0;
+	    if (args.length == 0 || args[arg].equals("--stdout")) {
+	    	outStream = new StdOutStream();
+	    	arg++;
+	    } else {
+	    	outStream = new GUIDisplay();
 	    }
     	
-	    String content;
+	    if (arg >= args.length) {
+	    	System.out.println("USAGE: java " + Calculator.class.getName() + " [--stdout] inputfile");
+	    	return;
+	    }
+	    
+	    String code;
 	    try {
-             content = new String(Files.readAllBytes(Paths.get(args[0])));
+             code = new String(Files.readAllBytes(Paths.get(args[arg])));
         } catch (IOException e) {
-            System.out.println("Could not read file!");
+            System.out.println("Could not read file \"" + args[arg] + "\".");
             return;
         }
 	    
 	    Calculator calc = new Calculator();
 	    try {
-	        calc.parse(content);
-	        calc.getContext().setOutputStream(new StdOutStream());
+	        calc.parse(code);
+	        calc.getContext().setOutputStream(outStream);
 	        calc.run();
         } catch (ParseException e) {
 	        e.printStackTrace();
 	        return;
         }
+	    System.exit(0);
     }
 	
 }

@@ -43,6 +43,14 @@ public class Display implements IStream {
 			line.deleteCharAt(0);
 	}
 	
+	public int getLines() {
+		return LINES;
+	}
+
+	public int getColumns() {
+		return COLUMNS;
+	}
+
 	@Override
 	public String toString() {
 		return lines.stream().map(l->l.toString()).collect(Collectors.joining("\n"));
