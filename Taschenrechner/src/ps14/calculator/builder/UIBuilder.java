@@ -23,6 +23,8 @@ public class UIBuilder {
 		program += Builder.WriteString(greeting);
 		program += inputLoop(5);
 		program += Builder.WriteString(farewell);
+		
+		program = Builder.trim(program);
 		return program;
 	}
 	
@@ -45,9 +47,10 @@ public class UIBuilder {
 		p += Builder.MoveToTop(bp-bpCurrent);
 		p += "10*+"; // append digits
 		bp--;
-		p += Builder.MoveDown(bp-bpCurrent);
-		p += (bp-bpNumber) + "d1";
-		p += Builder.MoveDown(bp-bpNumber);
+
+		p += (bp-bpNumber+1) + "d1";
+		p += Builder.MoveDown(2, bp-bpNumber);
+		
 		return p;
 	}
 	
@@ -88,12 +91,9 @@ public class UIBuilder {
 		p += Builder.MoveToTop(bp-bpBuffer); // buffer
 		p += Builder.MoveToTop(bp-bpBuffer); // number
 		p += "g"; // group
-		p += "0"; // new number
-		p += Builder.MoveDown(bp-bpBuffer); // move number down
-		p += Builder.MoveDown(bp-bpBuffer); // move buffer down
-		p += (bp-bpNumber) + "d";
-		p += "0";
-		p += Builder.MoveDown(bp-bpNumber);
+		p += (bp-bpNumber+1) + "d";
+		p += "0 0 "; // new current & number
+		p += Builder.MoveDown(3, bp-bpBuffer-2); // move buffer & number down
 		return p;
 	}
 	
@@ -105,6 +105,7 @@ public class UIBuilder {
 		p += "1+";
 		
 		p += If("1c0>", "1-~", ""); // if there are negative open brackets, don't ever become positive again
+		
 		p += Builder.MoveDown(bp-bpOpenBrackets);
 		
 		p += "[]";
@@ -161,7 +162,7 @@ public class UIBuilder {
 		String exec = "";
 		
 		// magic values, so that we can clean up leftover state from the executed command
-		int[] magicValues = new int[] { 0xbad1dea, 0xdead, 0xbeef };
+		int[] magicValues = new int[] { 0x1dea, 0xdead, 0xbeef };
 		for (int value : magicValues) {
 			exec += " " + value;
 		}

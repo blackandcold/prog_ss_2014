@@ -1,3 +1,5 @@
+import static org.junit.Assert.assertEquals;
+
 import org.junit.Test;
 
 import ps14.calculator.builder.Builder;
@@ -103,9 +105,17 @@ public class BuilderTest extends AbstractCalculatorTest {
 	}
 	
 	@Test
+	public void test_moveDown_group() {
+		expect("5 4 3 0 0" + Builder.MoveDown(2, 1) , "5 4 3 0 0 ^");
+		expect("5 4 3 0 0" + Builder.MoveDown(2, 2) , "5 4 0 0 3 ^");
+		expect("5 4 3 0 0" + Builder.MoveDown(2, 3) , "5 0 0 4 3 ^");
+		expect("5 4 3 0 0" + Builder.MoveDown(2, 4) , "0 0 5 4 3 ^");
+	}
+	
+	@Test
 	public void test_powerOperator() {
-		expect("0 3 " + Builder.powerOperator() , "1 ^");
-		expect("4 10 " + Builder.powerOperator() , "10000 ^");
+		expect("0 3" + Builder.powerOperator() , "1 ^");
+		expect("4 10" + Builder.powerOperator() , "10000 ^");
 	}
 	
 	@Test
@@ -162,6 +172,12 @@ public class BuilderTest extends AbstractCalculatorTest {
 	@Test
 	public void test_modifyVariableDownTheStack() {
 		expect("0 [3 2] 1" + Builder.MoveToTop(3) + "1+" + Builder.MoveDown(3) , "1 [3 2] 1 ^");
+	}
+	
+	@Test
+	public void test_trim() {
+		assertEquals("8a+[1 2]", Builder.trim("     8   a  + [ 1 2    ] "));
+		assertEquals("8[]1 2+[1 2]", Builder.trim(" 8 [ ]1 2 +[  1 2] "));
 	}
 	
 }

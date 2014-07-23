@@ -13,7 +13,7 @@ public class Builder {
 	 * @param otherwise Code to execute if condition is 0
 	 */
 	public static String If(String condition, String then, String otherwise) {
-		return String.format("%s[%s][%s][3c4d1+da]a", condition, otherwise, then);
+		return String.format("%s[%s][%s]3c4d1+da", condition, otherwise, then);
 	}
 	
 	public static String If(String condition, String then) {
@@ -56,7 +56,7 @@ public class Builder {
 	 */
 	public static String MoveToTop(int position) {
 		if (position == 1) return "";
-		return "["+position + "c" + (position+1) + "d]a";
+		return " "+position + "c" + (position+1) + "d";
 	}
 	
 	/**
@@ -64,11 +64,20 @@ public class Builder {
 	 * @param position of stack item to move down
 	 */
 	public static String MoveDown(int position) {
-		String result = "";
+		return MoveDown(1, position);
+	}
+	
+	/**
+	 * Moves (count) items at the top of the stack down to the given position
+	 * @param how many items to move
+	 * @param position of stack item to move down
+	 */
+	public static String MoveDown(int count, int position) {
+		String result = " ";
 		for (int i = 0; i < position - 1; i++) {
-			result += MoveToTop(position);
+			result += MoveToTop(position + count - 1);
 		}
-		return "["+result+"]a";
+		return result;
 	}
 	
 	/**
@@ -78,7 +87,7 @@ public class Builder {
 	 */
 	public static String checkIfLetter() {
 		// ASCII code in the range A-Z (65-90) or a-z (97-122)
-		return "[1c 64< 2c 91> & 2c 96< 3c 123> & | 2d]a";
+		return " 1c 64< 2c 91> & 2c 96< 3c 123> & | 2d";
 	}
 	
 	/**
@@ -88,14 +97,14 @@ public class Builder {
 	 */
 	public static String checkIfDigit() {
 		// ASCII code in the range 0-9 (48-57)
-		return "[48-~1c1~<2c10>&2d]a";
+		return " 48-~ 1c 1~ <2 c 10> & 2d";
 	}
 	
 	/**
 	 * Applied to a positive int, puts the digit count onto the stack
 	 */
 	public static String digitCountOperator() {
-		String p = "";
+		String p = " ";
 		
 		p += If("1c0>", "~", "");
 		p += "1"; // starting count at 1
@@ -109,7 +118,7 @@ public class Builder {
 				+ "1+"
 				+ MoveDown(2));
 		p += "2d";
-		return "[" + p + "]a";
+		return p;
 	}
 	
 	/**
@@ -117,7 +126,7 @@ public class Builder {
 	 * using the write operator
 	 */
 	public static String WriteInt() {
-		String p = "";
+		String p = " ";
 		
 		p += If("1c0>", "45w", ""); // minus symbol
 		
@@ -141,14 +150,14 @@ public class Builder {
 				);
 		p += "1d1d";
 		
-		return "[" + p + "]a";
+		return p;
 	}
 	
 	/**
 	 * Replaces the int on top of the stack with its most significant digit
 	 */
 	public static String mostSignificantDigitOperator() {
-		String p = "";
+		String p = " ";
 		
 		p += "1c";
 		p += digitCountOperator();
@@ -161,14 +170,14 @@ public class Builder {
 		p = If("1c10>", "", p);
 		p = If("1c0>", "~", "") + p;
 		
-		return "[" + p + "]a";
+		return " " + p;
 	}
 	
 	/**
 	 * Put 1 on the stack if the top of the stack consists of the given values
 	 */
 	public static String checkTopOfStackOperator(int[] values) {
-		String p = "";
+		String p = " ";
 		for (int value : values) {
 			p += MoveToTop(values.length);
 			p += value;
@@ -177,7 +186,7 @@ public class Builder {
 		for (int i = 0; i < values.length-1; i++) {
 			p += "&";
 		}
-		return "[" + p + "]a";
+		return p;
 	}
 	
 	/**
@@ -187,7 +196,7 @@ public class Builder {
 	public static String equalsAnyOperator(int[] values) {
 		if (values.length == 0) return " 1d0";
 		String p = "";
-		p += "0 ";
+		p += " 0 ";
 		
 		for (int i = 0; i < values.length; i++) {
 			p += "2c"; // copy original
@@ -197,7 +206,7 @@ public class Builder {
 		
 		p += "2d";
 		
-		return "[" + p + "]a";
+		return p;
 	}
 	
 	public static String deleteUntilOperator(int[] values) {
@@ -233,9 +242,8 @@ public class Builder {
 			  + MoveDown(3));
 		exp += "1d2d"; // cleanup
 		
-		String p = "";
-		p += If("2c1>", "1d1d1", exp);
-		return "[" + p + "]a";
+		String p = If(" 2c1>", "1d1d1", exp);
+		return p;
 	}
 	
 	/**
@@ -243,7 +251,7 @@ public class Builder {
 	 * @return
 	 */
 	public static String parseDigit() {
-		return "[48-~]a";
+		return " 48-~";
 	}
 	
 	/**
@@ -251,7 +259,7 @@ public class Builder {
 	 * and puts the read number onto the data stack
 	 */
 	public static String readNumber() {
-		String p = "0 1 1";
+		String p = " 0 1 1 ";
 		p += While("2c",
 				  "r" // read char
 				+ If("1c" + (int)'-' + "=", // if it is a minus sign
@@ -266,9 +274,22 @@ public class Builder {
 								+ "10*+" // append digits
 								+ MoveDown(4),
 								"1d2d0 2c3d"))
-				//"r1c3c4d2c3d" + checkIfDigit(), "2c3d" + parseDigit() + "3c4d10*+2c3d"
-			);
+				);
 		p += "1d*";
-		return "["+p+"]a";
+		return p;
+	}
+	
+	public static String trim(String program) {
+		String trimmed = program
+				.replaceAll("(\\s)+", " ")
+				.replaceAll("(\\D) (\\d)", "$1$2")
+				.replaceAll("(\\d) (\\D)", "$1$2")
+				.replaceAll("(\\D) (\\D)", "$1$2")
+				.trim();
+		
+		if (program.equals(trimmed))
+			return program;
+		else
+			return trim(trimmed);
 	}
 }

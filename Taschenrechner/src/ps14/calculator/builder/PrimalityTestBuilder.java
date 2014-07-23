@@ -2,6 +2,7 @@ package ps14.calculator.builder;
 
 
 
+
 public class PrimalityTestBuilder {
 	
 	/**
@@ -19,7 +20,7 @@ public class PrimalityTestBuilder {
 		String p = "";
 		p += Builder.If("1c2>", "1d0", loop);
 		
-		return "[" + p + "]a";
+		return " " + p;
 	}
 	
 	/**
@@ -33,6 +34,8 @@ public class PrimalityTestBuilder {
 		p += "1c";
 		p += getPrimalityTestOperator();
 		p += getResultStringOperator();
+		
+		p = Builder.trim(p);
 		return p;
 	}
 	
@@ -42,10 +45,12 @@ public class PrimalityTestBuilder {
 	 */
 	public String getResultStringOperator() {
 		String p = "";
-		p += Builder.If("1=", 
-				Builder.WriteString("Yes, ") + Builder.WriteInt() + Builder.WriteString(" is a prime number\n"),
-				Builder.WriteString("No, ") + Builder.WriteInt() + Builder.WriteString(" is not a prime number\n"));
-		return "["+p+"]a";
+		p += Builder.MoveToTop(2);
+		p += Builder.WriteInt();
+		p += Builder.WriteString(" is ");
+		p += Builder.If("1=", "", Builder.WriteString("not "));
+		p += Builder.WriteString("a prime number\n");
+		return p;
 	}
 	
 	
