@@ -11,7 +11,8 @@ import ps14.calculator.elements.IntegerElement;
 import ps14.calculator.elements.operators.OperatorFactory;
 
 /**
- * Creates a Calculator Context from a String.
+ * Creates a Calculator Context from a String
+ * by parsing the language of the calculator.
  */
 public class Parser {
 	private String input;
@@ -94,7 +95,7 @@ public class Parser {
 		IElement operator = OperatorFactory.getOperator(ch);
 		
 		if (operator == null) {
-			throw new ParseException("Unknown operator");
+			throw new ParseException("Unknown operator: " + ch);
 		}
 		
 		return operator;

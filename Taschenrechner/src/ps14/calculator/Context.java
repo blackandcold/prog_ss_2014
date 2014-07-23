@@ -8,9 +8,13 @@ import java.util.stream.Collectors;
 import ps14.calculator.elements.BlockElement;
 import ps14.calculator.elements.IElement;
 import ps14.calculator.elements.IntegerElement;
+import ps14.calculator.streams.Display;
+import ps14.calculator.streams.IStream;
+import ps14.calculator.streams.InStream;
 
 public class Context {
 	private Stack<IElement> dataStack, codeStack;
+	private IStream inStream, outStream;
 	
 	public Context() {
 		this(new Stack<IElement>(), new Stack<IElement>());
@@ -19,6 +23,25 @@ public class Context {
 	public Context(Stack<IElement> dataStack, Stack<IElement> codeStack) {
 		this.dataStack = dataStack;
 		this.codeStack = codeStack;
+		
+		inStream = new InStream();
+		outStream = new Display();
+	}
+	
+	public IStream getInputStream() {
+		return inStream;
+	}
+	
+	public IStream getOutputStream() {
+		return outStream;
+	}
+	
+	public void setInputStream(IStream inStream) {
+		this.inStream = inStream;
+	}
+	
+	public void setOutputStream(IStream outStream) {
+		this.outStream = outStream;
 	}
 	
 	public Stack<IElement> getDataStack() {

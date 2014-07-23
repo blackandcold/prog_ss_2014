@@ -12,7 +12,7 @@ public class WriteOperator implements IElement {
 	
 	@Override
 	public void apply(Context ctxt) {
-	    // TODO write
+		ctxt.getOutputStream().write(ctxt.nextInt().getValue());
 	}
 	
 	@Override
