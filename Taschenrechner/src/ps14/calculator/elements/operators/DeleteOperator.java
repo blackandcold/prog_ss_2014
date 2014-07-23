@@ -17,10 +17,10 @@ public class DeleteOperator implements IElement {
 		int arg = ctxt.nextInt().getValue();
 	    
 	    if (arg < 1)
-	    	throw new CalculatorException("Copy index must be positive!");
+	    	throw new CalculatorException("Deletion index must be positive!");
 	    
 	    if (arg > ctxt.getDataStack().size())
-	    	throw new CalculatorException("Copy index out of range!");
+	    	throw new CalculatorException("Deletion index out of range!");
 	    
 	    int index = ctxt.getDataStack().size() - arg;
 	    ctxt.getDataStack().remove(index);
