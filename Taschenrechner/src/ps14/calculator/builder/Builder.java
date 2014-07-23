@@ -16,6 +16,10 @@ public class Builder {
 		return String.format("%s[%s][%s][3c4d1+da]a", condition, otherwise, then);
 	}
 	
+	public static String If(String condition, String then) {
+		return If(condition, then, "");
+	}
+	
 	/**
 	 * Builds a while loop. 
 	 * @param condition as long the top element of the stack after executing the condition is 1 the body is executed
@@ -173,6 +177,26 @@ public class Builder {
 		for (int i = 0; i < values.length-1; i++) {
 			p += "&";
 		}
+		return "[" + p + "]a";
+	}
+	
+	/**
+	 * Takes the int on top of the stack and puts 1 if
+	 * it equals any of the given values, 0 otherwise
+	 */
+	public static String equalsAnyOperator(int[] values) {
+		if (values.length == 0) return " 1d0";
+		String p = "";
+		p += "0 ";
+		
+		for (int i = 0; i < values.length; i++) {
+			p += "2c"; // copy original
+			p += values[i]; // put value
+			p += "=|";
+		}
+		
+		p += "2d";
+		
 		return "[" + p + "]a";
 	}
 	

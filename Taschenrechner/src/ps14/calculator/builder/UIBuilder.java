@@ -9,16 +9,19 @@ public class UIBuilder {
 	private String prompt = "Enter command: ";
 	private String farewell = "\nGood bye!\n";
 	private String unbalanced = "There are unbalanced brackets!\n";
+	private String invalidOp = "Invalid operator: ";
 	
+	// base pointer offsets
 	private int bpBuffer = 0;
 	private int bpCurrent = 1;
 	private int bpNumber = 2;
 	private int bpOpenBrackets = 3;
+	private int bpInvalidOperator = 4;
 	
 	public String getUI() {
-		String program = "[]0 0 0 ";
+		String program = "[]0 0 0 0 ";
 		program += Builder.WriteString(greeting);
-		program += inputLoop(4);
+		program += inputLoop(5);
 		program += Builder.WriteString(farewell);
 		return program;
 	}
@@ -131,11 +134,24 @@ public class UIBuilder {
 	
 	private String pushOperator(int bp) {
 		String p = "";
-		p += "1cb"; // build operator
-		p += Builder.MoveToTop(bp-bpBuffer+1);
-		p += Builder.MoveToTop(2);
-		p += "g";
-		p += Builder.MoveDown(bp-bpBuffer);
+		
+		int[] ops = new int[] {
+			'a', '+', 'b', 'c', 'd', '/', '=', 'x', '>', '<', '&', '|', '%', '*', '~', 'r', '-', 'w'
+		};
+		
+		p += "1c";
+		p += If(Builder.equalsAnyOperator(ops),
+			"1cb" // build operator
+			+ Builder.MoveToTop(bp-bpBuffer+1)
+			+ Builder.MoveToTop(2)
+			+ "g"
+			+ Builder.MoveDown(bp-bpBuffer)
+			
+			// store invalid operator
+			, (bp-bpInvalidOperator)+"d"
+			+ "1c"
+			+ Builder.MoveDown(bp-bpInvalidOperator));
+		
 		return p;
 	}
 	
@@ -166,9 +182,18 @@ public class UIBuilder {
 		
 		exec += "10w"; // newline
 		
+		// safety checks
+		p += " 1 "; // the everything-good variable
+		bp++;
+		
 		// check if brackets are balanced
-		p += If((bp-bpOpenBrackets)+"c0=", exec, rebalance(bp));
-
+		p += If((bp-bpOpenBrackets)+"c0=", "", "0&" + rebalance(bp));
+		
+		// check if invalid operator was used
+		p += If((bp-bpInvalidOperator)+"c0=", "", "0&" + resetInvalidOperator(bp));
+		bp--;
+		p += If("", exec, resetBuffer(bp));
+		
 		return p;
 	}
 	
@@ -187,15 +212,38 @@ public class UIBuilder {
 					)
 				+ "1d");
 		
-		// clear last buffer
-		p += Builder.MoveToTop(bp-bpBuffer);
-		p += "1d[]";
-		p += Builder.MoveDown(bp-bpBuffer);
-		
 		// reset open bracket count
 		p += (bp-bpOpenBrackets) + "d";
 		p += "0";
 		p += Builder.MoveDown(bp-bpOpenBrackets);
+		
+		return p;
+	}
+	
+	private String resetInvalidOperator(int bp) {
+		String p = "";
+		
+		p += Builder.MoveToTop(bp-bpInvalidOperator);
+		if (!invalidOp.isEmpty()) {
+			p += Builder.WriteString("Invalid operator: ");
+			p += "w";
+			p += "10w";
+		} else {
+			p += "1d";
+		}
+		
+		p += "0";
+		p += Builder.MoveDown(bp-bpInvalidOperator);
+		
+		return p;
+	}
+	
+	private String resetBuffer(int bp) {
+		String p = "";
+		
+		p += Builder.MoveToTop(bp-bpBuffer);
+		p += "1d[]";
+		p += Builder.MoveDown(bp-bpBuffer);
 		
 		return p;
 	}
@@ -213,6 +261,7 @@ public class UIBuilder {
 		this.prompt = "";
 		this.farewell = "";
 		this.unbalanced = "";
+		this.invalidOp = "";
 	}
 
 

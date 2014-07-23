@@ -19,6 +19,12 @@ public class BuilderTest extends AbstractCalculatorTest {
 	}
 	
 	@Test
+	public void test_if_simple() { 
+		expect(Builder.If("1", "1"), "1 ^");
+		expect(Builder.If("0", "1"), "^");
+	}
+	
+	@Test
 	public void test_while() {
 		expect(Builder.While("r10=1-", "97w"), "^", "hello\n", "aaaaa");
 	}
@@ -126,6 +132,14 @@ public class BuilderTest extends AbstractCalculatorTest {
 		expect("1 2 3 4 5 6 " + Builder.deleteUntilOperator(new int[]{4}), "1 2 3 4 ^");
 		expect("1 2 3 4 5 6 " + Builder.deleteUntilOperator(new int[]{6}), "1 2 3 4 5 6 ^");
 		expect("1 2 3 4 5 6 " + Builder.deleteUntilOperator(new int[]{1}), "1 ^");
+	}
+	
+	@Test
+	public void test_equalsAnyOperator() {
+		expect("1" + Builder.equalsAnyOperator(new int[]{4}), "0 ^");
+		expect("1" + Builder.equalsAnyOperator(new int[]{4, 3, 2, 2, 1}), "1 ^");
+		expect("3 5" + Builder.equalsAnyOperator(new int[]{8, 2, 1}), "3 0 ^");
+		expect("3 5" + Builder.equalsAnyOperator(new int[]{}), "3 0 ^");
 	}
 	
 	@Test
