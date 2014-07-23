@@ -12,8 +12,8 @@ public class MultiplicationOperator implements IElement {
 	
 	@Override
 	public void apply(Context ctxt) {
-		IntegerElement i1 = (IntegerElement) ctxt.getDataStack().pop();
-		IntegerElement i2 = (IntegerElement) ctxt.getDataStack().pop();
+		IntegerElement i1 = ctxt.nextInt();
+		IntegerElement i2 = ctxt.nextInt();
 		
 		ctxt.getDataStack().push(new IntegerElement(i1.getValue() * i2.getValue()));
 	}
