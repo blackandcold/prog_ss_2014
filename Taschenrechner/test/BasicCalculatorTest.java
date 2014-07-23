@@ -58,14 +58,23 @@ public class BasicCalculatorTest extends AbstractCalculatorTest {
 	}
 	
 	@Test
-	public void test_equals() {
+	public void test_equals_ints() {
 		expect("1 1 =", "1 ^");
 		expect("1 3 =", "0 ^");
 	}
 	
-	@Test(expected=CalculatorException.class)
-	public void test_equals_block() {
-		expect("[1] 1 =", "error");
+	@Test
+	public void test_equals_int_block() {
+		expect("[] 1 =", "0 ^");
+		expect("1 [1] =", "0 ^");
+	}
+	
+	@Test
+	public void test_equals_blocks() {
+		expect("[] [] =", "1 ^");
+		expect("[1 2] [1 2] =", "1 ^");
+		expect("[1 2] [1] =", "0 ^");
+		expect("[1 [2]] [1 [2]] =", "1 ^");
 	}
 	
 	@Test

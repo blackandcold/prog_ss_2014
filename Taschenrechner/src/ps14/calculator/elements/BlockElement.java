@@ -31,5 +31,22 @@ public class BlockElement implements IElement {
 		String inner = elements.stream().map(e->e.toString()).collect(Collectors.joining(" "));
 	    return "[" + inner + "]";
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+	    if (obj instanceof BlockElement) {
+	    	BlockElement other = (BlockElement) obj;
+	    	if (elements.size() != other.getElements().size())
+	    		return false;
+	    	
+	    	for (int i = 0; i < elements.size(); i++) {
+	    		boolean equal = this.elements.get(i).equals(other.elements.get(i));
+	    		if (!equal) return false;
+	    	}
+	    	
+	    	return true;
+	    }
+	    return false;
+	}
 
 }

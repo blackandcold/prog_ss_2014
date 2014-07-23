@@ -23,4 +23,12 @@ public class IntegerElement implements IElement {
 	public String toString() {
 	    return String.valueOf(value);
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof IntegerElement) {
+			return this.value == ((IntegerElement) obj).getValue();
+		}
+	    return false;
+	}
 }
