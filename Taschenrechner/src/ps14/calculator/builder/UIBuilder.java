@@ -8,15 +8,17 @@ public class UIBuilder {
 	private String greeting = "Hello!\n";
 	private String prompt = "Enter command: ";
 	private String farewell = "\nGood bye!\n";
+	private String unbalanced = "There are unbalanced brackets!\n";
 	
 	private int bpBuffer = 0;
 	private int bpCurrent = 1;
 	private int bpNumber = 2;
+	private int bpOpenBrackets = 3;
 	
 	public String getUI() {
-		String program = "[]0 0 ";
+		String program = "[]0 0 0 ";
 		program += Builder.WriteString(greeting);
-		program += inputLoop(3);
+		program += inputLoop(4);
 		program += Builder.WriteString(farewell);
 		return program;
 	}
@@ -94,6 +96,14 @@ public class UIBuilder {
 	
 	private String pushNewBlock(int bp) {
 		String p = "";
+		
+		// increase open brackets count
+		p += Builder.MoveToTop(bp-bpOpenBrackets);
+		p += "1+";
+		
+		p += If("1c0>", "1-~", ""); // if there are negative open brackets, don't ever become positive again
+		p += Builder.MoveDown(bp-bpOpenBrackets);
+		
 		p += "[]";
 		p += Builder.MoveDown(bp-bpBuffer);
 		return p;
@@ -101,6 +111,17 @@ public class UIBuilder {
 	
 	private String pushBlock(int bp) {
 		String p = "";
+		
+		// decrease open brackets count
+		p += Builder.MoveToTop(bp-bpOpenBrackets);
+		p += "1-~";
+		
+		// if there are negative open brackets, don't ever become positive again
+		// also, push a fake block so that we don't crash
+		p += If("1c0>", "1-~"
+			+ "[]" + Builder.MoveDown(bp-bpBuffer+1), ""); 
+		p += Builder.MoveDown(bp-bpOpenBrackets);
+		
 		p += Builder.MoveToTop(bp-bpBuffer+1);
 		p += Builder.MoveToTop(bp-bpBuffer+1);
 		p += "bg"; // merge!
@@ -120,12 +141,47 @@ public class UIBuilder {
 	
 	private String execute(int bp) {
 		String p = "";
-		p += Builder.MoveToTop(bp-bpBuffer);
-		p += "[]";
-		p += Builder.MoveDown(bp-bpBuffer+1); // clear buffer
-		p += "a"; // apply it!
+		String exec = "";
 		
-		p += "10w"; // newline
+		// clear buffer
+		exec += Builder.MoveToTop(bp-bpBuffer);
+		exec += "[]";
+		exec += Builder.MoveDown(bp-bpBuffer+1);
+		
+		exec += "a"; // apply it!
+		exec += "10w"; // newline
+		
+		// check if brackets are balanced
+		p += If((bp-bpOpenBrackets)+"c0=", exec, rebalance(bp));
+
+		return p;
+	}
+	
+	private String rebalance(int bp) {
+		String p = "";
+		
+		p += Builder.WriteString(unbalanced);
+		p += (bp-bpOpenBrackets) + "c";
+		p += If("0>", "",
+				// clear multiple open buffers
+				  (bp-bpOpenBrackets) + "c"
+				+ While("2c0<", 
+					  (bp-bpBuffer+2) + "d"
+					+ "2c1-~3d"
+					+ Builder.MoveDown(2)
+					)
+				+ "1d");
+		
+		// clear last buffer
+		p += Builder.MoveToTop(bp-bpBuffer);
+		p += "1d[]";
+		p += Builder.MoveDown(bp-bpBuffer);
+		
+		// reset open bracket count
+		p += (bp-bpOpenBrackets) + "d";
+		p += "0";
+		p += Builder.MoveDown(bp-bpOpenBrackets);
+		
 		return p;
 	}
 	
@@ -141,6 +197,7 @@ public class UIBuilder {
 		this.greeting = "";
 		this.prompt = "";
 		this.farewell = "";
+		this.unbalanced = "";
 	}
 
 
