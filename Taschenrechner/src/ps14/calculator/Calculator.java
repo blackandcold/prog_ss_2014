@@ -106,7 +106,9 @@ public class Calculator {
 	        calc.run();
         } catch (ParseException e) {
 	        e.printStackTrace();
-        }
+        } catch (CalculatorException e) {
+        	System.err.println("Error: " + e.getMessage());
+		}
 	    System.exit(0);
     }
 	
