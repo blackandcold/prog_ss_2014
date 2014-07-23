@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import ps14.calculator.builder.UIBuilder;
 import ps14.calculator.elements.operators.ExitOperator;
 import ps14.calculator.parser.ParseException;
 import ps14.calculator.parser.Parser;
@@ -79,25 +80,24 @@ public class Calculator {
 	    IStream outStream;
 	    
 	    int arg = 0;
-	    if (args.length == 0 || args[arg].equals("--stdout")) {
+	    if (args.length > 0 && args[arg].equals("--stdout")) {
 	    	outStream = new StdOutStream();
 	    	arg++;
 	    } else {
 	    	outStream = new GUIDisplay();
 	    }
     	
-	    if (arg >= args.length) {
-	    	System.out.println("USAGE: java " + Calculator.class.getName() + " [--stdout] inputfile");
-	    	return;
-	    }
-	    
 	    String code;
-	    try {
-             code = new String(Files.readAllBytes(Paths.get(args[arg])));
-        } catch (IOException e) {
-            System.out.println("Could not read file \"" + args[arg] + "\".");
-            return;
-        }
+	    if (arg >= args.length) {
+	    	code = new UIBuilder().getUI();
+	    } else {
+		    try {
+	             code = new String(Files.readAllBytes(Paths.get(args[arg])));
+	        } catch (IOException e) {
+	            System.out.println("Could not read file \"" + args[arg] + "\".");
+	            return;
+	        }
+	    }
 	    
 	    Calculator calc = new Calculator();
 	    try {

@@ -1,0 +1,53 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin:'application'
+mainClassName = "ps14.calculator.Calculator"
+
+sourceCompatibility = 1.8
+version = '1.0'
+
+sourceSets {
+  main {
+    java {
+      srcDir 'src'
+    }
+  }
+  test {
+    java {
+      srcDir 'test'
+    }
+  }
+}
+
+test { 
+  scanForTestClasses = false 
+  include '**/*TestSuite.class'  
+}
+
+run {
+  standardInput = System.in
+}
+
+// get ui code
+task(ui, dependsOn: 'classes', type: JavaExec) {
+  main = 'ps14.calculator.builder.UIBuilder'
+  classpath = sourceSets.main.runtimeClasspath
+}
+
+// get primality test code
+task(primes, dependsOn: 'classes', type: JavaExec) {
+  main = 'ps14.calculator.builder.PrimalityTestBuilder'
+  classpath = sourceSets.main.runtimeClasspath
+}
+
+jar {
+  manifest { attributes 'Main-Class': mainClassName }
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  testCompile group: 'junit', name: 'junit', version: '4.+'
+}

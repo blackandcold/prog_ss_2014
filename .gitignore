@@ -50,3 +50,6 @@ nbproject/
 .project
 .settings
 .classpath
+
+# Gradle
+.gradle/
