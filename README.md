@@ -4,5 +4,5 @@ Programming Languages
 Programmiersprachen SS 2014 TU Wien
 
  - Taschenrechner JAVA
- - Interpretor PHP
+ - Interpreter PHP
  - Editor Haskel
