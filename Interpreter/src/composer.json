@@ -3,7 +3,7 @@
 {
     "require":
     {
-        "monolog/monolog": "1.11.*@dev", /* https://github.com/Seldaek/monolog */
+        "monolog/monolog": "1.11.*@dev",
         "symfony/filesystem": "2.6.*@dev",
         "phpunit/phpunit-mock-objects": "2.3.*@dev",
         "phpunit/php-code-coverage": "3.0.*@dev",
