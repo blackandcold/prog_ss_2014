@@ -6,18 +6,21 @@ namespace Structure;
 
 
 use Commands\Exec;
-use Thread;
+use Worker;
 
 // using http://php.net/manual/en/book.pthreads.php
 
-class ProgParser extends Thread{
+class ProgParser extends Worker{
 
     public function run()
     {
         // TODO Parse Lexer Output
             // TODO check actual token for completness (are the braces closed...)
-            // TODO call commands and set up variables and strings
-                // TODO call sub lexer on strings containing not only [a-zA-Z0-9]
+
+        // TODO check parse results for deeper commands (strings containing something or sup procedures)
+
+        // TODO call commands and set up variables and strings
+            // TODO call sub lexer on strings containing not only [a-zA-Z0-9]
 
 
         // TODO wait for finishing of all threads
@@ -33,10 +36,8 @@ class ProgParser extends Thread{
 
         if ($execThread->start())
         {
-            /*
-             * Do some expensive work, while already doing other
-             * work in the child thread.
-             */
+            // TODO Switch token types and run command threads
+                // TODO or lexer calls and then again subroutine calls
 
             // wait until thread is finished
             $execThread->join();

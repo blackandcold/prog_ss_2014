@@ -24,11 +24,13 @@ class DataFactory {
     }
     public static function getSingleExecExample()
     {
+        // TESTCASE don't change
         return 'x y = exec "cat" "test"';
     }
 
     public static function getSingleSplitExample()
     {
+        // TESTCASE don't change
         return 'x y = split "/" "a/b/c"';
     }
 
@@ -50,8 +52,11 @@ finally : max = "error";
 
     public static function getVariableExample()
     {
+        // TESTCASE don't change
         return 'test $a$ -le $c$';
     }
+
+    /* not yet functioning or incomplete cases */
 
     public static function getFullCustomExample()
     {

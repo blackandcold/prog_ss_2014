@@ -7,7 +7,6 @@
         "symfony/filesystem": "2.6.*@dev",
         "phpunit/phpunit-mock-objects": "2.3.*@dev",
         "phpunit/php-code-coverage": "3.0.*@dev",
-        "phpunit/phpunit": "4.4.*@dev",
-        "divi/pthreads-stub": "dev-master"
+        "phpunit/phpunit": "4.4.*@dev"
     }
 }
