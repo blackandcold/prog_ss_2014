@@ -1,8 +1,13 @@
 package ps14.calculator;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 
 import ps14.calculator.builder.UIBuilder;
 import ps14.calculator.elements.operators.ExitOperator;
@@ -14,7 +19,7 @@ import ps14.calculator.streams.StdOutStream;
 
 public class Calculator {
 	private Context context;
-	private boolean printStateEveryStep = false;
+	public boolean printStateEveryStep = false;
 	
 	/**
 	 * Creates and uses a new context from the given String.
@@ -76,39 +81,68 @@ public class Calculator {
 	}
 	
 	
-	public static void main(String[] args) {
-	    IStream outStream;
+	public static void main(String[] args) throws IOException {
+		List<String> argList = Arrays.asList(args);
 	    
-	    int arg = 0;
-	    if (args.length > 0 && args[arg].equals("--stdout")) {
+	    if (argList.contains("--help") || argList.contains("-h")) {
+	    	System.out.println("Usage: Calculator [options] [file]\n");
+	    	System.out.printf("%1$-20s %2$s\n", "-v --verbose", "Verbose (Print state every step)");
+	    	System.out.printf("%1$-20s %2$s\n", "-i --interactive", "Interactive mode (Present the user interface)");
+	    	System.out.printf("%1$-20s %2$s\n", "-o --stdout", "Print output to stdout instead of display");
+	    	System.out.printf("%1$-20s %2$s\n", "-x", "Wait after program is finished");
+	    	return;
+	    }
+	    
+	    IStream outStream;
+	    Calculator calc = new Calculator();
+	    
+	    if (argList.contains("-o") || argList.contains("--stdout")) {
 	    	outStream = new StdOutStream();
-	    	arg++;
 	    } else {
 	    	outStream = new GUIDisplay();
 	    }
-    	
-	    String code;
-	    if (arg >= args.length) {
-	    	code = new UIBuilder().getUI();
-	    } else {
-		    try {
-	             code = new String(Files.readAllBytes(Paths.get(args[arg])));
-	        } catch (IOException e) {
-	            System.out.println("Could not read file \"" + args[arg] + "\".");
-	            return;
-	        }
+	    
+	    boolean wait = false;
+	    if (argList.contains("-x")) {
+	    	wait = true;
 	    }
 	    
-	    Calculator calc = new Calculator();
+	    String code;
+	    Optional<String> filePath = argList.stream().filter(x -> !x.startsWith("-")).findFirst();
+	    
+	    if (filePath.isPresent()) {
+		    try {
+	             code = new String(Files.readAllBytes(Paths.get(filePath.get())));
+	        } catch (IOException e) {
+	            System.out.println("Could not read file \"" + filePath.get() + "\".");
+	            return;
+	        }
+	    } else if (argList.contains("-i") || argList.contains("--interactive")) {
+	    	code = new UIBuilder().getUI();
+	    } else {
+	    	code = new BufferedReader(new InputStreamReader(System.in)).readLine();
+	    	calc.printStateEveryStep = true;
+	    }
+
+	    if (argList.contains("--verbose") || argList.contains("-v")) {
+	    	calc.printStateEveryStep = true;
+	    }
+	    
 	    try {
 	        calc.parse(code);
 	        calc.getContext().setOutputStream(outStream);
 	        calc.run();
         } catch (ParseException e) {
-	        e.printStackTrace();
+	        System.err.println("Parsing error: " + e.getMessage());
         } catch (CalculatorException e) {
         	System.err.println("Error: " + e.getMessage());
 		}
+	    
+	    if (wait) {
+	    	System.in.skip(System.in.available());
+	    	System.in.read();
+	    }
+	    
 	    System.exit(0);
     }
 	

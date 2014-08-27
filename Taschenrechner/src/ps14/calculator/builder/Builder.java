@@ -247,7 +247,7 @@ public class Builder {
 	}
 	
 	/**
-	 * Replaces the ASCII digit on top of the stack with the corresponding integer
+	 * Replaces the ASCII code for a digit on top of the stack with the corresponding integer
 	 * @return
 	 */
 	public static String parseDigit() {
