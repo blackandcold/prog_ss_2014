@@ -6,7 +6,9 @@ namespace test;
 
 
 use Commands\Exec;
+use Commands\Split;
 use PHPUnit_Framework_TestCase;
+use Structure\ProgProcedureCommandContext;
 use Structure\ProgVariable;
 
 class CommandTest extends PHPUnit_Framework_TestCase{
@@ -14,30 +16,38 @@ class CommandTest extends PHPUnit_Framework_TestCase{
     // call exec as would be with 'x y = exec "cat" "test"'
     public function testExecCommand()
     {
-        $vars = array(
-                "variable_names" => array(
-                                            "x",
-                                            "y"
-                                        ),
-                "command" => array(
-                                    "name" => "sysctl",
-                                    "parameter" => "-n machdep.cpu.brand_string"
-                                    ),
-                "x" => new ProgVariable("x",null),
-                "y" => new ProgVariable("y",null)
+
+        $externalVars = array(
+            "x" => new ProgVariable("x",null),
+            "y" => new ProgVariable("y",null)
         );
 
-        $executor = new Exec($vars);
+        $execContext = new ProgProcedureCommandContext(
+                        array(
+                                "x",
+                                "y"
+                        ),
+                        "sysctl",
+                        "-n machdep.cpu.brand_string",
+                        $externalVars
+                        );
+
+
+        $executor = new Exec($execContext);
 
         if ($executor->start())
         {
             $executor->join();
 
-            print_r($executor->result);
+            //print_r($execContext);
         }
+        $this->assertNotNull($externalVars["x"]->getValue());
+        $this->assertNotNull($externalVars["y"]->getValue());
     }
     public function testExecCommandOneVar()
     {
+        // TODO redo with context
+        /*
         $vars = array(
             "variable_names" => array(
                 "x"
@@ -54,7 +64,90 @@ class CommandTest extends PHPUnit_Framework_TestCase{
         {
             $executor->join();
 
-            print_r($executor->result);
+            print_r($executor->context);
+        }*/
+    }
+
+    public function testSplitCommand()
+    {
+        $externalVars = array(
+            "x" => new ProgVariable("x",null),
+            "y" => new ProgVariable("y",null)
+        );
+
+        $execContext = new ProgProcedureCommandContext(
+            array(
+                "x",
+                "y"
+            ),
+            "/",
+            "a/b/c",
+            $externalVars
+        );
+
+        $executor = new Split($execContext);
+
+        if ($executor->start())
+        {
+            $executor->join();
         }
+        $this->assertNotNull($externalVars["x"]->getValue());
+        $this->assertNotNull($externalVars["y"]->getValue());
+        $this->assertEquals("a",$externalVars["x"]->getValue());
+    }
+    public function testSplitCommandMinus()
+    {
+        $externalVars = array(
+            "x" => new ProgVariable("x",null),
+            "y" => new ProgVariable("y",null)
+        );
+
+        $execContext = new ProgProcedureCommandContext(
+            array(
+                "x",
+                "y"
+            ),
+            "-",
+            "a-b-c",
+            $externalVars
+        );
+
+        $executor = new Split($execContext);
+
+        if ($executor->start())
+        {
+            $executor->join();
+        }
+        $this->assertNotNull($externalVars["x"]->getValue());
+        $this->assertNotNull($externalVars["y"]->getValue());
+        $this->assertEquals("a",$externalVars["x"]->getValue());
+    }
+    /*
+    *   @expectedException Exception
+    */
+    public function testSplitCommandException()
+    {
+        $externalVars = array(
+            "x" => new ProgVariable("x",null)
+        );
+
+        $execContext = new ProgProcedureCommandContext(
+            array(
+                "x"
+            ),
+            "/",
+            "a/b/c",
+            $externalVars
+        );
+
+        $executor = new Split($execContext);
+
+        if ($executor->start())
+        {
+            $executor->join();
+        }
+
+
+        $this->assertEquals("ERROR", $externalVars["x"]->getValue());
     }
 } 

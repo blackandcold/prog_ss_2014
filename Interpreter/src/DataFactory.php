@@ -5,23 +5,27 @@
 namespace test;
 
 
-class DataFactory {
+class DataFactory
+{
 
     public static function getProgramStartExample()
     {
         // TESTCASE don't change
         return "asdf - ";
     }
+
     public static function getProgramStartExtendedExample()
     {
         // TESTCASE don't change
         return 'asdf - "$max$" { }';
     }
+
     public static function getExecStringExample()
     {
         // TESTCASE don't change
         return 'ab = exec "test $a$ -le $b$"';
     }
+
     public static function getSingleExecExample()
     {
         // TESTCASE don't change

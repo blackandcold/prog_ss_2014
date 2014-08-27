@@ -4,11 +4,18 @@
 
 namespace Structure;
 
-// Lexer constructed after http://nitschinger.at/Writing-a-simple-lexer-in-PHP
 
+/**
+ * Class ProgLexer
+ * @package Structure
+ * inspired by http://nitschinger.at/Writing-a-simple-lexer-in-PHP
+ */
 class ProgLexer
 {
     //
+    /**
+     * @var array
+     */
     protected static $allowedtokens = array(
 
         "/^(\s-\s)/" => "T_PROCEDURE_START",
@@ -29,26 +36,27 @@ class ProgLexer
         "/^(\s+)/" => "T_WHITESPACE",
     );
 
+    /**
+     * @param $code
+     * @return array
+     * @throws \Exception
+     */
     public static function run($code)
     {
-        if(!is_array($code))
-        {
+        if (!is_array($code)) {
             $code = explode("\n", $code);
         }
         $tokens = array();
 
-        foreach($code as $number => $line)
-        {
+        foreach ($code as $number => $line) {
             $offset = 0;
 
 
-            while($offset < strlen($line))
-            {
+            while ($offset < strlen($line)) {
                 $result = static::find($line, $number, $offset);
 
-                if($result === false)
-                {
-                    throw new \Exception("Unable to parse line " . ($line+1) . ".");
+                if ($result === false) {
+                    throw new \Exception("Unable to parse line " . ($line + 1) . ".");
                 }
 
                 $tokens[] = $result;
@@ -58,18 +66,23 @@ class ProgLexer
 
         return $tokens;
     }
+
+    /**
+     * @param $line
+     * @param $number
+     * @param $offset
+     * @return array|bool
+     */
     protected static function find($line, $number, $offset)
     {
         $string = substr($line, $offset);
 
-        foreach(static::$allowedtokens as $pattern => $name)
-        {
-            if(preg_match($pattern, $string, $matches))
-            {
+        foreach (static::$allowedtokens as $pattern => $name) {
+            if (preg_match($pattern, $string, $matches)) {
                 return array(
                     'match' => $matches[1],
                     'token' => $name,
-                    'line' => $number+1
+                    'line' => $number + 1
                 );
             }
         }
