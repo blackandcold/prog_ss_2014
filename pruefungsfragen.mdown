@@ -1,0 +1,21 @@
+Fragen
+------
+
+* Einstieg: Stoffüberblick geben (jedes Mal)
+* Fragen zur Architektur / Übersetzung von Programmen
+	* Static Link / Dynamic Link / Verwendung in Java? Braucht Java Static Link (->Nein)? Simulation von Nested Functions in Java möglich? (5x)
+	* Was ist ein Stack Frame (1x)
+* Parametertypen
+	* Arten von Parameterübergabe / Unterschied zwischen Call by Reference und Call by Value-Result? (7x)
+	* Unterschied zwischen Call by Name in C-Makros und Lambda-Kalkül (6x)
+* Exceptions
+	* Exceptionhandling C-C++-Java / Was macht throws? / Propagation / Wie wird der Exceptionhandler zur Laufzeit gefunden? Was ist das teuerste beim Behandeln von Exceptions? (4x)
+	* Exceptions in Eiffel (2x)
+* Synchronisation
+	* Synchronisation allgemein - Überblick (4x)
+	* Synchronisation in Ada. Wird wird wait() und notify() von Java in Ada realisiert? Task types + Rendezvous in Ada (4x)
+	* Monitore im Detail / Unterschied notify-notifyAll (5x)
+	* Rendezvous im Detail (4x)
+	* Protected types / Welche Einschränkungen gibts bei Guards (3x)
+	* Semaphore (1x)
+* Codebeispiele erklären: LISP, Smalltalk, Ada, ML (8x)
