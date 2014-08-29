@@ -49,7 +49,7 @@ doLoop :: CurrentFile -> IO ()
 doLoop Nil = do
 	command <- readCommand
 	execCommand Nil command
-doLoop f@(CF n c pr pc m) = do
+doLoop f@(CF n content pr pc m) = do
 	refreshCurrentRow f
 	c <- getChar
 	case (ord c) of
@@ -65,12 +65,26 @@ doLoop f@(CF n c pr pc m) = do
 					putStr "Command >> "-}
 					command <- readCommand
 					execCommand f command
-		--10 -> doLoop (jumpLine f)
+		10 -> doLoop (jumpLine f)
+		127  -> if pc == 0 then doLoop f
+				else doLoop (deleteCharacter (CF n content pr (pc-1) m))
 		_    ->	if not (isControl c) then
 					case m of
 						Insert		-> doLoop (insertCharacter f c)
 						Overwrite	-> doLoop (replaceCharacter f c) 
-				else doLoop f
+
+				else do
+					codeChar <- getChar
+					if (codeChar == '[') then do
+						codeChar <- getChar
+						if (codeChar == '3') then do
+							codeChar <- getChar
+							doLoop (handleSpecialCharacter f codeChar)
+						else do
+							refreshCurrentRow f
+							doLoop (handleSpecialCharacter f codeChar)
+					else
+						doLoop (handleSpecialCharacter f codeChar)
 
 --------------------
 ---------------------- Command Prompt Code
@@ -117,13 +131,32 @@ execCommand f@(CF _ _ _ _ _) command = do
 		_			-> doLoop f
 
 parseGoCommand :: CurrentFile -> String -> String -> CurrentFile
-parseGoCommand f@(CF n c pr pc m) sRow sCol = (CF n c resultRow resultCol m)
+parseGoCommand f@(CF n c pr pc m) sRow sCol = goTo f iRow iCol
 	where
 		iRow = read sRow :: Int
 		iCol = read sCol :: Int
-		resultRow = min (max 0 iRow) ((length c) - 1)
-		resultCol = min (max 0 iCol) ((length (c!!(resultRow)))-1)
-	
+
+goTo :: CurrentFile -> Int -> Int -> CurrentFile
+goTo f@(CF n c pr pc m) iRow iCol = (CF n nc resultRow resultCol m)
+	where
+		nc = expandContentToLines c iRow
+		resultRow = min (max 0 iRow) ((length nc) - 1)
+		resultCol = min (max 0 iCol) ((length (nc!!(resultRow))))
+
+expandContentToLines :: FileContents -> Int -> FileContents
+expandContentToLines c r = 
+	if (length c <= r) then expandContentToLines (c++[""]) r
+	else c
+
+handleSpecialCharacter :: CurrentFile -> Char -> CurrentFile
+handleSpecialCharacter f@(CF n c pr pc m) ch =
+	case ch of
+		'A'			-> goTo f (pr-1) pc
+		'B'			-> goTo f (pr+1) pc
+		'C'			-> goTo f pr (pc+1)
+		'D'			-> goTo f pr (pc-1)
+		'~'			-> deleteCharacter f
+		_			-> f
 
 --------------------
 ---------------------- Basic Screen I/O
@@ -327,7 +360,7 @@ fileContentsToString []    = ""
 fileContentsToString (h:t) = h ++ "\n" ++ (fileContentsToString t)
 
 jumpLine :: CurrentFile -> CurrentFile
-jumpLine (CF n c pr pc m) = CF n c (pr+1) pc m
+jumpLine f@(CF n c pr pc m) = goTo f (pr+1) pc
 
 replaceCharacter :: CurrentFile -> Char -> CurrentFile
 replaceCharacter f@(CF n c pr pc m) ch =
