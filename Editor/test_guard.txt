@@ -1,1 +1,5 @@
-ab == "0" : bc == "0" : max = "$c$";
+maxnum a b c - "$max$" {
+    ab == "0" : bc == "0" : max = "$c$";
+    ab == "0" : bc == "0" : max = "$c$";
+asdf asdf
+}

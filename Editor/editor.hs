@@ -40,9 +40,12 @@ setWriteMode    (CF n c pr pc m) newval = (CF n c pr pc newval)
 main :: IO ()
 main = do
 	initScreen
-	--fileInit <- readMyFile "test_error.txt"
-	--printFileHighlighted fileInit 0
-	--setEditorCursorPosition (getCurPosRow fileInit) (getCurPosCol fileInit)
+	{-clearScreen
+	fileInit <- readMyFile "test_guard.txt"
+	printFileHighlighted fileInit 0
+	setEditorCursorPosition (getCurPosRow fileInit) (getCurPosCol fileInit)
+	putStrLn (parseFile fileInit)
+	setSGR [Reset]-}
 	doLoop Nil
 
 doLoop :: CurrentFile -> IO ()
@@ -54,15 +57,6 @@ doLoop f@(CF n content pr pc m) = do
 	c <- getChar
 	case (ord c) of
 		9 ->	do
-					{-setCursorPosition 0 0
-					setSGR [Reset]
-					setSGR [SetConsoleIntensity BoldIntensity]
-					putStrLn "Command >>                                             "
-					setCursorPosition 0 11
-					setSGR [Reset]
-					command <- getLine
-					setCursorPosition 0 0
-					putStr "Command >> "-}
 					command <- readCommand
 					execCommand f command
 		10 -> doLoop (jumpLine f)
@@ -128,6 +122,7 @@ execCommand f@(CF _ _ _ _ _) command = do
 		"overwrite"	-> doLoop (setWriteMode f Overwrite)
 		"del"		-> doLoop (deleteCharacter f)
 		"close"		-> initScreen>>doLoop Nil
+		"parse"		-> (printParseResults f)>>(printFileHighlighted f 0)>>(doLoop f)
 		_			-> doLoop f
 
 parseGoCommand :: CurrentFile -> String -> String -> CurrentFile
@@ -185,22 +180,32 @@ exitSave = do
 	--getChar>>return ()
 
 printHelp :: IO ()
-printHelp = do
+printHelp =
+	printAndWait "\
+\ >> open <filename>        Open file with name <filename>\n\
+\ >> save                   Save current file file\n\
+\ >> close                  Close current file\n\
+\ \n\
+\ >> parse                  Parse file\n\
+\ \n\
+\ >> go <rowNum> <colNum>   Set cursor to <rowNum>, <colNum>\n\
+\ >> del                    Delete character at current cursor position\n\
+\ >> insert                 Switch to insert mode\n\
+\ >> overwrite              Switch to overwrite mode\n\
+\ \n\
+\ >> help                   View help\n\
+\ >> exit                   Exit without save\n\
+\ \n\
+\ Press any key to resume..."
+
+printParseResults :: CurrentFile -> IO ()
+printParseResults cf = printAndWait (parseFile cf)
+
+printAndWait :: String -> IO ()
+printAndWait text = do
 	setLineNumberCursorPosition 0
 	clearFromCursorToScreenEnd
-	putStrLn " >> open <filename>        Open file with name <filename>"
-	putStrLn " >> save                   Save current file file"
-	putStrLn " >> close                  Close current file"
-	putStrLn ""
-	putStrLn " >> go <rowNum> <colNum>   Set cursor to <rowNum>, <colNum>"
-	putStrLn " >> del                    Delete character at current cursor position"
-	putStrLn " >> insert                 Switch to insert mode"
-	putStrLn " >> overwrite              Switch to overwrite mode"
-	putStrLn ""
-	putStrLn " >> help                   View help"
-	putStrLn " >> exit                   Exit without save"
-	putStrLn ""
-	putStrLn "Press any key to resume..."
+	putStr text
 	getChar>>return ()
 	setLineNumberCursorPosition 0
 	clearFromCursorToScreenEnd
@@ -345,11 +350,14 @@ lexErrors (CF _ fc _ _ _) = do
 ---------------------- Parser related functions
 --------------------
 
-parseIt :: CurrentFile -> IO ()
-parseIt (CF _ fc _ _ _) = do
-	let tokens = alexScanTokens (fileContentsToString fc)
-	    guard = parse tokens
-	print guard
+parseFile :: CurrentFile -> String
+parseFile (CF _ fc _ _ _) =
+	case parseResult of
+		Failed msg -> msg
+		_          -> "No parse errors detected"
+	where
+		tokens = alexScanTokens (fileContentsToString fc)
+		parseResult = parse tokens
 
 --------------------
 ---------------------- Editor related functions
