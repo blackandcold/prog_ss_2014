@@ -4,13 +4,13 @@
 
 namespace Structure;
 
-use Worker;
+use Stackable;
 
 /**
  * Class ProgProcedureExecutionContext
  * @package Structure
  */
-class ProgProcedureExecutionContext extends Worker
+class ProgProcedureExecutionContext extends Stackable
 {
     /**
      * @var
@@ -187,13 +187,6 @@ class ProgProcedureExecutionContext extends Worker
      */
     public function run()
     {
-        // TODO run subprocedures
-
-        // TODO exec commands
-
-        // TODO check guards
-
-        // TODO check variablebindings
-
+        // nothing to see here, move along
     }
 } 
