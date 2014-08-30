@@ -38,7 +38,7 @@ class DataFactory
         return 'x y = split "/" "a/b/c"';
     }
 
-    public static function getFullMaxmumExample()
+    public static function getFullMaxnumExample()
     {
         // TESTCASE don't change
         return 'maxnum a b c - "$max$" {

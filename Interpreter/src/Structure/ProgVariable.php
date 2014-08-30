@@ -16,12 +16,12 @@ class ProgVariable extends Stackable
     /**
      * @var
      */
-    protected $value;
+    private $value;
 
     /**
      * @var
      */
-    protected $name;
+    private $name;
 
 
     /**

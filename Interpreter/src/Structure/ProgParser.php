@@ -12,6 +12,12 @@ use Worker;
 
 class ProgParser extends Worker
 {
+    protected $bracecount;
+
+    public function __construct()
+    {
+        $this->bracecount = 0;
+    }
 
     public function run()
     {
@@ -25,7 +31,7 @@ class ProgParser extends Worker
 
 
         // TODO wait for finishing of all threads
-        // TODO still unbound valiables => finally or exception
+        // TODO still unbound valiables after 3 thread checks => finally
 
         // TODO return results
     }

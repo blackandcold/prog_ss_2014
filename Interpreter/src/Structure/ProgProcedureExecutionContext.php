@@ -4,13 +4,13 @@
 
 namespace Structure;
 
-use Stackable;
+use Worker;
 
 /**
  * Class ProgProcedureExecutionContext
  * @package Structure
  */
-class ProgProcedureExecutionContext extends Stackable
+class ProgProcedureExecutionContext extends Worker
 {
     /**
      * @var

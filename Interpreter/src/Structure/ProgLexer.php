@@ -25,7 +25,7 @@ class ProgLexer
         "/^(split)/" => "T_SPLIT_COMMAND",
         "/^(\\\"[^\\\"]+\\\")/" => "T_STRING",
         "/^([a-zA-Z0-9]+)/" => "T_IDENTIFIER",
-        "/^(\\\$[a-z]\\\$)/" => "T_VARIABLE",
+        "/^(\\\$[a-z]+\\\$)/" => "T_VARIABLE",
         "/^(:)/" => "T_GUARDED_COMMAND_START",
         "/^(;)/" => "T_GUARDED_COMMAND_END",
         "/^({)/" => "T_OPEN_CURLY_BRACE",
@@ -43,20 +43,32 @@ class ProgLexer
      */
     public static function run($code)
     {
-        if (!is_array($code)) {
+        if (!is_array($code))
+        {
             $code = explode("\n", $code);
         }
         $tokens = array();
 
-        foreach ($code as $number => $line) {
+        foreach ($code as $number => $line)
+        {
             $offset = 0;
 
 
-            while ($offset < strlen($line)) {
+            while ($offset < strlen($line))
+            {
                 $result = static::find($line, $number, $offset);
 
-                if ($result === false) {
+                if ($result === false)
+                {
                     throw new \Exception("Unable to parse line " . ($line + 1) . ".");
+                }
+                else
+                {
+                    if($result['token'] == "T_STRING" && strpos($result['match'],'$') !== false )
+                    {
+                        $subelement = trim($result['match'], "\"");
+                        $result['subelement'] = ProgLexer::run($subelement);
+                    }
                 }
 
                 $tokens[] = $result;
@@ -77,8 +89,10 @@ class ProgLexer
     {
         $string = substr($line, $offset);
 
-        foreach (static::$allowedtokens as $pattern => $name) {
-            if (preg_match($pattern, $string, $matches)) {
+        foreach (static::$allowedtokens as $pattern => $name)
+        {
+            if (preg_match($pattern, $string, $matches))
+            {
                 return array(
                     'match' => $matches[1],
                     'token' => $name,

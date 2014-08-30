@@ -11,7 +11,7 @@ class TextToolsTest extends PHPUnit_Framework_TestCase
 
     public function testLexer()
     {
-        $input = DataFactory::getFullMaxmumExample();
+        $input = DataFactory::getFullMaxnumExample();
 
         try {
             print $input;
