@@ -9,6 +9,7 @@ import Tokens
 %error     { parseError }
 %monad { E } { thenE } { returnE }
 
+-- definition of tokens
 %token
 	finally     { TKFinally _ }
 	name        { TKName _ $$ }
@@ -24,6 +25,8 @@ import Tokens
 	'-'         { TKMinus _ }
 
 %%
+
+-- definition of productions
 
 Program            : ProcedureList                            { $1 }
 
@@ -59,10 +62,10 @@ GuardedCommandList : {- empty -}                              { [] }
 GuardedCommands    : GuardedCommand                           { [$1] }
                    | GuardedCommands GuardedCommand           { $1 ++ [$2] }
 
-GuardedCommand     : Guards ':' Command ';'                   { Cmd $1 $3 }
+GuardedCommand     : Guards Command ';'                       { Cmd $1 $2 }
 
-Guards             : Guard                                    { [$1] } 
-                   | Guards ':' Guard                         { $1 ++ [$3] }
+Guards             : {- empty -}                              { [] }
+                   | Guards Guard ':'                         { $1 ++ [$2] }
 
 
 Guard              : finally                                  { Finally }
@@ -102,10 +105,12 @@ catchE m k =
 
 tok f p s = f p s
 
---parseError :: [Token] -> P a
+
+-- definition of error message
 parseError []     = failE ("Parse error - unexpected end of file")
 parseError tokens = failE ("Parse error at row " ++ (show ((tokenGetRow (tokens!!0))+1)) ++ ", column " ++ (show ((tokenGetColumn (tokens!!0))+1)))
 
+-- definition of data structure
 
 data Procedure =
 	Procedure Name [Parameter] [Result] [GuardedCommand]
