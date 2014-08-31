@@ -9,8 +9,15 @@ use Structure\StackableArray;
 use Structure\ProgVariable;
 use Structure\ProgGuard;
 
+/**
+ * Class GuardTest
+ * @package test
+ */
 class GuardTest extends PHPUnit_Framework_TestCase {
 
+    /**
+     *  testing locking of guards
+     */
     public function testGuardVariableChanged()
     {
         $externalVars = array();
@@ -19,11 +26,12 @@ class GuardTest extends PHPUnit_Framework_TestCase {
         $externalVars["y"] = new ProgVariable("y", null);
 
         $guard = new ProgGuard($externalVars['x'], $externalVars['y'], "==");
+        $guard->start();
 
-        $this->assertTrue(!$guard->isSatisfied());
+        $y = $externalVars["y"];
 
-        $externalVars['y']->setValue("asdf");
-
+        $y->setValue("asdf");
+        $y->notify();
 
         $this->assertTrue($guard->isSatisfied());
 

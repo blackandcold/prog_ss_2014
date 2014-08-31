@@ -5,6 +5,7 @@
 namespace Structure;
 
 use Stackable;
+use Structure\ProgVariable;
 
 /**
  * Class ProgProcedureExecutionContext
@@ -36,6 +37,26 @@ class ProgProcedureExecutionContext extends Stackable
      * @var array
      */
     protected $guards;
+    /**
+     * @var
+     */
+    protected $returnValue;
+
+    /**
+     * @return mixed
+     */
+    public function getReturnValue()
+    {
+        return $this->returnValue;
+    }
+
+    /**
+     * @param mixed $returnValue
+     */
+    public function setReturnValue($returnValue)
+    {
+        $this->returnValue = $returnValue;
+    }
 
     /**
      * @return mixed

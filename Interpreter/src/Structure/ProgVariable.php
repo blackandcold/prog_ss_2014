@@ -5,6 +5,7 @@
 namespace Structure;
 
 use Stackable;
+use Cond;
 
 
 /**
@@ -23,7 +24,6 @@ class ProgVariable extends Stackable
      */
     private $name;
 
-
     /**
      * @param $name
      * @param null $value
@@ -35,6 +35,7 @@ class ProgVariable extends Stackable
         if (!is_string($value) && !is_null($value))
             throw new \Exception("Value of Variable must be a String!");
         $this->value = $value;
+
     }
 
     /**

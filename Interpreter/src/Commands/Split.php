@@ -14,7 +14,7 @@ class Split extends Thread
 {
 
     /**
-     * @var
+     * @var ProgProcedureCommandContext
      */
     public $context;
 
@@ -38,7 +38,8 @@ class Split extends Thread
     }
 
     /**
-     *
+     *  splits the second string by the symbol of the first string
+     *  writes out the results to the variables
      */
     public function run()
     {
@@ -53,7 +54,6 @@ class Split extends Thread
         }
 
         $pieces = explode($this->context->getCommandName(), $this->context->getCommandParameter());
-
 
         if (!$firstVar->isVariableBound())
             $firstVar->setValue($pieces[0]);
