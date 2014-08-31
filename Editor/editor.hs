@@ -56,29 +56,23 @@ doLoop f@(CF n content pr pc m) = do
 	refreshCurrentRow f
 	c <- getChar
 	case (ord c) of
+		1 ->	doLoop (goTo f pr 0)
+		5 ->	doLoop (goTo f pr (length (content!!pr)))
 		9 ->	do
 					command <- readCommand
 					execCommand f command
-		10 -> doLoop (jumpLine f)
-		127  -> if pc == 0 then doLoop f
-				else doLoop (deleteCharacter (CF n content pr (pc-1) m))
+		10 -> do
+			let nf = breakLine f
+			refreshRows nf [r | r <- [pr..(length content)]]
+			doLoop nf
+		127  -> backDelete f
 		_    ->	if not (isControl c) then
 					case m of
 						Insert		-> doLoop (insertCharacter f c)
 						Overwrite	-> doLoop (replaceCharacter f c) 
 
-				else do
-					codeChar <- getChar
-					if (codeChar == '[') then do
-						codeChar <- getChar
-						if (codeChar == '3') then do
-							codeChar <- getChar
-							doLoop (handleSpecialCharacter f codeChar)
-						else do
-							refreshCurrentRow f
-							doLoop (handleSpecialCharacter f codeChar)
-					else
-						doLoop (handleSpecialCharacter f codeChar)
+				else
+					handleSpecialCharacter f [c]
 
 --------------------
 ---------------------- Command Prompt Code
@@ -132,26 +126,36 @@ parseGoCommand f@(CF n c pr pc m) sRow sCol = goTo f iRow iCol
 		iCol = read sCol :: Int
 
 goTo :: CurrentFile -> Int -> Int -> CurrentFile
-goTo f@(CF n c pr pc m) iRow iCol = (CF n nc resultRow resultCol m)
+goTo f@(CF n c pr pc m) iRow iCol = (CF n c resultRow resultCol m)
 	where
-		nc = expandContentToLines c iRow
-		resultRow = min (max 0 iRow) ((length nc) - 1)
-		resultCol = min (max 0 iCol) ((length (nc!!(resultRow))))
+		resultRow = min (max 0 iRow) ((length c) - 1)
+		resultCol = min (max 0 iCol) ((length (c!!(resultRow))))
 
 expandContentToLines :: FileContents -> Int -> FileContents
 expandContentToLines c r = 
 	if (length c <= r) then expandContentToLines (c++[""]) r
 	else c
 
-handleSpecialCharacter :: CurrentFile -> Char -> CurrentFile
-handleSpecialCharacter f@(CF n c pr pc m) ch =
-	case ch of
-		'A'			-> goTo f (pr-1) pc
-		'B'			-> goTo f (pr+1) pc
-		'C'			-> goTo f pr (pc+1)
-		'D'			-> goTo f pr (pc-1)
-		'~'			-> deleteCharacter f
-		_			-> f
+readSpecialCharacter :: CurrentFile -> [Char] -> IO ()
+readSpecialCharacter f chars = do
+	codeChar <- getChar
+	handleSpecialCharacter f (chars++[codeChar])
+
+handleSpecialCharacter :: CurrentFile -> [Char] -> IO ()
+handleSpecialCharacter f chars@['\ESC'] = readSpecialCharacter f chars
+handleSpecialCharacter f chars@['\ESC', _] = readSpecialCharacter f chars
+handleSpecialCharacter f@(CF _ _ pr pc _) chars@['\ESC', '[', c]
+	| c == 'A' = refreshCurrentRow f >> doLoop (goTo f (pr-1) pc)
+	| c == 'B' = refreshCurrentRow f >> doLoop (goTo f (pr+1) pc)
+	| c == 'C' = refreshCurrentRow f >> doLoop (goTo f pr (pc+1))
+	| c == 'D' = refreshCurrentRow f >> doLoop (goTo f pr (pc-1))
+	| c == '3' = readSpecialCharacter f chars
+	| otherwise = doLoop f
+
+handleSpecialCharacter f@(CF n c pr pc m) chars@['\ESC', '[', '3', '~'] =
+	if pc == length (c!!pr) then backDelete (goTo f (pr+1) 0)
+	else doLoop (deleteCharacter f)
+handleSpecialCharacter f _ = doLoop f
 
 --------------------
 ---------------------- Basic Screen I/O
@@ -242,6 +246,13 @@ printFileHighlighted (CF n (line:rest) pr pc m)  r = do
 refreshCurrentRow :: CurrentFile -> IO ()
 refreshCurrentRow cf = do
 	refreshRowHighlighted (getCurRow cf) (getCurPosRow cf) (getCurPosRow cf) (getCurPosCol cf)
+
+-- refreshes the listed rows
+refreshRows :: CurrentFile -> [Int] -> IO ()
+refreshRows f [] = return ()
+refreshRows f@(CF _ c pr pc _) (x:xs) = do
+	refreshRowHighlighted (c!!x) x pr pc
+	refreshRows f xs
 
 refreshRowHighlighted :: FileRow -> Int -> CurPosRow -> CurPosCol -> IO ()
 refreshRowHighlighted fr r pr pc = do
@@ -367,8 +378,15 @@ fileContentsToString :: FileContents -> String
 fileContentsToString []    = ""
 fileContentsToString (h:t) = h ++ "\n" ++ (fileContentsToString t)
 
-jumpLine :: CurrentFile -> CurrentFile
-jumpLine f@(CF n c pr pc m) = goTo f (pr+1) pc
+breakLine :: CurrentFile -> CurrentFile
+breakLine f@(CF n c pr pc m) = (CF n nc (pr+1) 0 m)
+	where
+		nc = beginning ++ [firstHalf] ++ [secondHalf] ++ end
+		beginning = take pr c
+		firstHalf = take pc (c !! pr)
+		secondHalf = drop pc (c !! pr)
+		end = drop (pr+1) c
+
 
 replaceCharacter :: CurrentFile -> Char -> CurrentFile
 replaceCharacter f@(CF n c pr pc m) ch =
@@ -417,6 +435,19 @@ deleteCharacter f@(CF n c pr pc m) =
 	pr
 	pc
 	m
+
+backDelete :: CurrentFile -> IO ()
+backDelete f@(CF _ _ 0 0 _) = doLoop f
+backDelete f@(CF n c pr 0 m) = do
+	let npr = max 0 (pr-1)
+	let npc = length (c!!npr)
+	let nc = (take npr c) ++ [c!!npr ++ c!!pr] ++ (drop (pr+1) c)
+	let nf = (CF n nc npr npc m)
+	refreshRows nf [r | r <- [npr..(length nc)-1]]
+	setLineNumberCursorPosition (length nc)
+	clearFromCursorToLineEnd
+	doLoop nf
+backDelete f@(CF n c pr pc m) = doLoop (deleteCharacter (CF n c pr (pc-1) m))
 
 insertCharInFileRow :: FileRow -> Colnum -> Char -> FileRow
 insertCharInFileRow l i n = (take i l) ++ [n] ++ (drop i l)
