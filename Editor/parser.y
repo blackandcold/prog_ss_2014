@@ -62,10 +62,10 @@ GuardedCommandList : {- empty -}                              { [] }
 GuardedCommands    : GuardedCommand                           { [$1] }
                    | GuardedCommands GuardedCommand           { $1 ++ [$2] }
 
-GuardedCommand     : Guards ':' Command ';'                   { Cmd $1 $3 }
+GuardedCommand     : Guards Command ';'                       { Cmd $1 $2 }
 
-Guards             : Guard                                    { [$1] } 
-                   | Guards ':' Guard                         { $1 ++ [$3] }
+Guards             : {- empty -}                              { [] }
+                   | Guards Guard ':'                         { $1 ++ [$2] }
 
 
 Guard              : finally                                  { Finally }
