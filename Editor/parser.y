@@ -48,10 +48,9 @@ Parameters         : Parameter                                { [$1] }
 
 Parameter          : name                                     { Param $1 }
 
-ResultList         : {- empty -}                              { [] }
-                   | Results                                  { $1 }
+ResultList         : Result Results                           { [$1] ++ $2 }
 
-Results            : Result                                   { [$1] }
+Results            : {- empty -}                              { [] }
                    | Results Result                           { $1 ++ [$2] }
 
 Result             : string                                   { Result $1 }
@@ -67,7 +66,6 @@ GuardedCommand     : Guards Command ';'                       { Cmd $1 $2 }
 Guards             : {- empty -}                              { [] }
                    | Guards Guard ':'                         { $1 ++ [$2] }
 
-
 Guard              : finally                                  { Finally }
                    | name                                     { Boolean $1 }
                    | name '==' string                         { Equals $1 $3 }
@@ -78,10 +76,14 @@ Command            : name '=' string                          { Assignment $1 $3
                    | name name '=' exec string                { Execution $1 (StdOut $2) $5 (StdInNil) }
                    | name '=' exec string string              { Execution $1 (StdOutNil) $4 (StdIn $5) }
                    | name '=' exec string                     { Execution $1 (StdOutNil) $4 (StdInNil) }
+                   | name '=' name Strings                    { Execution $1 (StdOutNil) $3 (StdInNil) }
+
+Strings            : {- empty -}                              { [] }
+                   | string Strings                           { [$1] ++ $2 }
 
 {
 
-data E a = Ok a | Failed String
+data E a = Ok a | Failed [Token]
 	deriving Show
 
 thenE :: E a -> (a -> E b) -> E b
@@ -93,10 +95,10 @@ m `thenE` k =
 returnE :: a -> E a
 returnE a = Ok a
 
-failE :: String -> E a
+failE :: [Token] -> E a
 failE err = Failed err
 
-catchE :: E a -> (String -> E a) -> E a
+catchE :: E a -> ([Token] -> E a) -> E a
 catchE m k = 
    case m of
       Ok a -> Ok a
@@ -105,10 +107,7 @@ catchE m k =
 
 tok f p s = f p s
 
-
--- definition of error message
-parseError []     = failE ("Parse error - unexpected end of file")
-parseError tokens = failE ("Parse error at row " ++ (show ((tokenGetRow (tokens!!0))+1)) ++ ", column " ++ (show ((tokenGetColumn (tokens!!0))+1)))
+parseError tokens = failE tokens
 
 -- definition of data structure
 

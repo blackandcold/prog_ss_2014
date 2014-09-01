@@ -17,19 +17,21 @@ type Rownum       = Int
 type Colnum       = Int
 data WriteMode    = Insert | Overwrite
 data CurrentFile  = Nil |
-					CF Filename FileContents CurPosRow CurPosCol WriteMode
+					CF Filename FileContents CurPosRow CurPosCol WriteMode [Procedure] [Token]
 
-getFileName     (CF n c pr pc m) = n
-getFileContents (CF n c pr pc m) = c
-getCurPosRow    (CF n c pr pc m) = pr
-getCurPosCol    (CF n c pr pc m) = pc
-getCurRow       (CF n c pr pc m) = c!!pr
-getWriteMode    (CF n c pr pc m) = m
-setFileName     (CF n c pr pc m) newval = (CF newval c pr pc m)
-setFileContents (CF n c pr pc m) newval = (CF n newval pr pc m)
-setCurPosRow    (CF n c pr pc m) newval = (CF n c newval pc m)
-setCurPosCol    (CF n c pr pc m) newval = (CF n c pr newval m)
-setWriteMode    (CF n c pr pc m) newval = (CF n c pr pc newval)
+getFileName     (CF n c pr pc m parseTree syn) = n
+getFileContents (CF n c pr pc m parseTree syn) = c
+getCurPosRow    (CF n c pr pc m parseTree syn) = pr
+getCurPosCol    (CF n c pr pc m parseTree syn) = pc
+getCurRow       (CF n c pr pc m parseTree syn) = c!!pr
+getWriteMode    (CF n c pr pc m parseTree syn) = m
+getParseTree    (CF n c pr pc m parseTree syn) = parseTree
+getSyntaxErrors (CF n c pr pc m parseTree syn) = syn
+setFileName     (CF n c pr pc m parseTree syn) newval = (CF newval c pr pc m parseTree syn)
+setFileContents (CF n c pr pc m parseTree syn) newval = (CF n newval pr pc m parseTree syn)
+setCurPosRow    (CF n c pr pc m parseTree syn) newval = (CF n c newval pc m parseTree syn)
+setCurPosCol    (CF n c pr pc m parseTree syn) newval = (CF n c pr newval m parseTree syn)
+setWriteMode    (CF n c pr pc m parseTree syn) newval = (CF n c pr pc newval parseTree syn)
 
 --------------------
 ---------------------- Entry Point - main function, program loop
@@ -51,8 +53,19 @@ doLoop :: CurrentFile -> IO ()
 doLoop Nil = do
 	command <- readCommand
 	execCommand Nil command
-doLoop f@(CF n content pr pc m) = do
-	refreshCurrentRow f
+doLoop af@(CF n content pr pc m parseTree syn) = do
+	if (not (null (getSyntaxErrors af))) then do
+		let lastToken = ((getSyntaxErrors af)!!0)
+		refreshRows af [(tokenGetRow lastToken)]
+	else return ()
+	let f = (CF n content pr pc m (safeParse af) (parseErrors af))
+	printFileHighlighted f
+	highlightSyntaxErrors f
+	doLoopBody f
+
+doLoopBody :: CurrentFile -> IO ()
+doLoopBody f@(CF n content pr pc m parseTree syn) = do
+	setEditorCursorPosition pr pc
 	c <- getChar
 	case (ord c) of
 		1 ->	doLoop (goTo f pr 0)
@@ -109,13 +122,13 @@ execCommand Nil command = do
 		-- open the file identified by the filename in the commands argument
 		"open"		-> do
 							fileInit <- readMyFile (cmdList!!1)
-							printFileHighlighted fileInit 0
+							printFileHighlighted fileInit
 							setEditorCursorPosition (getCurPosRow fileInit) (getCurPosCol fileInit)	
 							doLoop fileInit
 		
 		-- others: wait for a new - valid - command
 		_ 			-> doLoop Nil
-execCommand f@(CF _ _ _ _ _) command = do
+execCommand f command = do
 	let cmdList = wordsWhen (==' ') command
 	case (cmdList!!0) of
 		
@@ -123,9 +136,10 @@ execCommand f@(CF _ _ _ _ _) command = do
 		"exit"		-> exitSave
 		
 		-- print a list of possible commands
-		"help"		-> printHelp>>(printFileHighlighted f 0)>>(doLoop f)
+		"help"		-> printHelp>>(printFileHighlighted f)>>(doLoop f)
 		
 		-- save the current editor contents to file system
+		"help"		-> printHelp>>(printFileHighlighted f)>>(doLoop f)
 		"save"		-> (writeMyFile f)>>(doLoop f)
 		
 		-- jump the given row/column position
@@ -144,21 +158,25 @@ execCommand f@(CF _ _ _ _ _) command = do
 		"close"		-> initScreen>>doLoop Nil
 		
 		-- parse currently opened file
-		"parse"		-> (printParseResults f)>>(printFileHighlighted f 0)>>(doLoop f)
+		"parse"		-> (printParseResults f)>>(printFileHighlighted f)>>(doLoop f)
+
+		"procedures" -> do
+			printAndWait (fileContentsToString (procedureNames f))
+			doLoop f
 		
 		-- others: wait for a new - valid - commands
 		_			-> doLoop f
 
 -- parses the "go" command and sets the current editor position
 parseGoCommand :: CurrentFile -> String -> String -> CurrentFile
-parseGoCommand f@(CF n c pr pc m) sRow sCol = goTo f iRow iCol
+parseGoCommand f@(CF n c pr pc m parseTree syn) sRow sCol = goTo f iRow iCol
 	where
 		iRow = read sRow :: Int
 		iCol = read sCol :: Int
 
 -- sets the current editor position to the given row/column
 goTo :: CurrentFile -> Int -> Int -> CurrentFile
-goTo f@(CF n c pr pc m) iRow iCol = (CF n c resultRow resultCol m)
+goTo f@(CF n c pr pc m parseTree syn) iRow iCol = (CF n c resultRow resultCol m parseTree syn)
 	where
 		resultRow = min (max 0 iRow) ((length c) - 1)
 		resultCol = min (max 0 iCol) ((length (c!!(resultRow))))
@@ -178,15 +196,15 @@ readSpecialCharacter f chars = do
 handleSpecialCharacter :: CurrentFile -> [Char] -> IO ()
 handleSpecialCharacter f chars@['\ESC'] = readSpecialCharacter f chars
 handleSpecialCharacter f chars@['\ESC', _] = readSpecialCharacter f chars
-handleSpecialCharacter f@(CF _ _ pr pc _) chars@['\ESC', '[', c]
-	| c == 'A' = refreshCurrentRow f >> doLoop (goTo f (pr-1) pc)
-	| c == 'B' = refreshCurrentRow f >> doLoop (goTo f (pr+1) pc)
-	| c == 'C' = refreshCurrentRow f >> doLoop (goTo f pr (pc+1))
-	| c == 'D' = refreshCurrentRow f >> doLoop (goTo f pr (pc-1))
+handleSpecialCharacter f@(CF _ _ pr pc _ parseTree syn) chars@['\ESC', '[', c]
+	| c == 'A' = refreshCurrentRow f >> doLoopBody (goTo f (pr-1) pc)
+	| c == 'B' = refreshCurrentRow f >> doLoopBody (goTo f (pr+1) pc)
+	| c == 'C' = refreshCurrentRow f >> doLoopBody (goTo f pr (pc+1))
+	| c == 'D' = refreshCurrentRow f >> doLoopBody (goTo f pr (pc-1))
 	| c == '3' = readSpecialCharacter f chars
 	| otherwise = doLoop f
 
-handleSpecialCharacter f@(CF n c pr pc m) chars@['\ESC', '[', '3', '~'] =
+handleSpecialCharacter f@(CF n c pr pc m parseTree syn) chars@['\ESC', '[', '3', '~'] =
 	if pc == length (c!!pr) then backDelete (goTo f (pr+1) 0)
 	else doLoop (deleteCharacter f)
 handleSpecialCharacter f _ = doLoop f
@@ -259,11 +277,12 @@ printAndWait text = do
 
 -- prints row numbers to the left of the editor area
 printLineNumber :: Int -> IO ()
-printLineNumber row = do
-	setLineNumberCursorPosition row
+printLineNumber rowIndex = do
+	setLineNumberCursorPosition rowIndex
 	clearFromCursorToLineEnd
 	putStr sRow
 	where
+		row = rowIndex + 1
 		sRow = if (length (show row)) == 1
 					then (show row) ++ " |"
 					else (show row) ++ "|"
@@ -278,25 +297,23 @@ pause = do
 -- prints the current file line by line
 -- to the screen (plain text)
 printFile :: CurrentFile -> IO ()
-printFile (CF _ [] _ _ _)          = return ()
-printFile (CF n (line:rest) pr pc m) = do
+printFile (CF _ [] _ _ _ _ _)          = return ()
+printFile (CF n (line:rest) pr pc m parseTree syn) = do
 	putStrLn line
-	printFile (CF n rest pr pc m)
+	printFile (CF n rest pr pc m parseTree syn)
 
 -- prints the current file line by line
 -- to the screen, started at the given row number
 -- syntax highlighting is based on the lexical analysis
-printFileHighlighted :: CurrentFile -> Int -> IO ()
-printFileHighlighted Nil _                         = return ()
-printFileHighlighted (CF _ [] _ _ _) _             = return ()
-printFileHighlighted (CF n (line:rest) pr pc m)  r = do
-	refreshRowHighlighted line r pr pc
-	printFileHighlighted (CF n rest pr pc m) (r+1)
+printFileHighlighted :: CurrentFile -> IO ()
+printFileHighlighted Nil              = return ()
+printFileHighlighted f@(CF _ c _ _ _ parseTree syn) = do
+	refreshRows f [0..(length c)-1]
 
 -- refreshes the current row, syntax highlighted
 refreshCurrentRow :: CurrentFile -> IO ()
-refreshCurrentRow cf = do
-	refreshRowHighlighted (getCurRow cf) (getCurPosRow cf) (getCurPosRow cf) (getCurPosCol cf)
+refreshCurrentRow cf@(CF _ _ pr _ _ parseTree syn) = do
+	refreshRows cf [pr]
 
 -- calls the lexical analysis and prints the
 -- current row to the screen
@@ -304,23 +321,22 @@ refreshCurrentRow cf = do
 -- from the position of the found error
 refreshRows :: CurrentFile -> [Int] -> IO ()
 refreshRows f [] = return ()
-refreshRows f@(CF _ c pr pc _) (x:xs) = do
-	refreshRowHighlighted (c!!x) x pr pc
+refreshRows f@(CF _ c pr pc _ parseTree syn) (x:xs) = do
+	refreshRowHighlighted f (c!!x) x pr pc
 	refreshRows f xs
 
-refreshRowHighlighted :: FileRow -> Int -> CurPosRow -> CurPosCol -> IO ()
-refreshRowHighlighted fr r pr pc = do
-	let errors = alexScanErrors fr
-	    tokens = alexScanTokens fr
+refreshRowHighlighted :: CurrentFile -> FileRow -> Int -> CurPosRow -> CurPosCol -> IO ()
+refreshRowHighlighted f fr r pr pc = do
+	let errors  = alexScanErrors fr
+	    tokens  = alexScanTokens fr
 	setSGR [Reset]
 	printLineNumber r
 	if null errors
 		then do
 			    -- repaint whole line in system default to get rid of underlinements of whitespaces
 				setEditorCursorPosition r 0
-				putStr fr
 				-- repaint highlighted tokens
-				highlightTokens tokens r
+				highlightTokens f tokens r
 		else highlightErrors fr errors r
 	setEditorCursorPosition pr pc
 
@@ -343,12 +359,14 @@ readMyFile n = do
 			0--((length listedContents)-1) -- last row
 			0--(length (listedContents!!((length listedContents)-1))) -- one column after last char in last row
 			Insert
+			[]
+			[]
 		)
 
 -- writes the current editor contents to the file system
 -- existing files will be overwritten
 writeMyFile :: CurrentFile -> IO ()
-writeMyFile (CF n c _ _ _) = writeFile n (fileContentsToString c)
+writeMyFile (CF n c _ _ _ _ _) = writeFile n (fileContentsToString c)
 
 --------------------
 ---------------------- Lexer related functions
@@ -356,24 +374,25 @@ writeMyFile (CF n c _ _ _) = writeFile n (fileContentsToString c)
 
 -- lexes the current file and highlights the found tokens
 lexIt :: CurrentFile -> IO ()
-lexIt (CF _ fc _ _ _) = do
+lexIt f@(CF _ fc _ _ _ parseTree syn) = do
 	let tokens = alexScanTokens (fileContentsToString fc)
-	highlightTokensPaused tokens
+	--highlightTokensPaused f tokens
+	return ()
 
 -- receives the token list of the given row number,
 -- retrieves color, intensity and value of the token
 -- and prints it to the sceen
-highlightTokens :: [Token] -> Int -> IO ()
-highlightTokens [] _    = return ()
-highlightTokens (h:t) r = do
+highlightTokens :: CurrentFile -> [Token] -> Int -> IO ()
+highlightTokens f []    _ = return ()
+highlightTokens f (h:t) r = do
 	setEditorCursorPosition r (tokenGetColumn h)
 	let color     = tokenGetColor h
-	    intensity = tokenGetIntensity h
+	    intensity = tokenGetIntensity f h
 	    value     = tokenGetValue h
 	setSGR [SetColor Foreground Dull color]
 	setSGR [SetConsoleIntensity intensity]
 	putStr value
-	highlightTokens t r
+	highlightTokens f t r
 
 -- prints the erroneous in red to the console
 -- from the position of the lexical error the contents
@@ -382,7 +401,7 @@ highlightErrors :: FileRow -> [Token] -> Int -> IO ()
 highlightErrors _ [] _     = return ()
 highlightErrors fr (h:t) r = do
 	let color     = tokenGetColor h
-	    intensity = tokenGetIntensity h
+	    intensity = tokenGetIntensity Nil h
 	    v         = tokenGetValue h
 	setSGR [SetColor Foreground Dull color]
 	setSGR [SetConsoleIntensity intensity]
@@ -393,6 +412,25 @@ highlightErrors fr (h:t) r = do
 	putStr v
 	setSGR [SetUnderlining NoUnderline]
 	highlightErrors fr t r
+
+-- highlights syntax errors in the file
+highlightSyntaxErrors :: CurrentFile -> IO ()
+highlightSyntaxErrors f = do
+	highlightSyntaxErrorTokens (getSyntaxErrors f)
+	setEditorCursorPosition (getCurPosRow f) (getCurPosCol f)
+
+-- prints highlighted tokens representing an syntax error
+highlightSyntaxErrorTokens :: [Token] -> IO ()
+highlightSyntaxErrorTokens [] = return ()
+highlightSyntaxErrorTokens (token:ts) = do
+	setEditorCursorPosition (tokenGetRow token) (tokenGetColumn token)
+	let value     = tokenGetValue token
+	setSGR [SetColor Foreground Dull Red]
+	setSGR [SetSwapForegroundBackground True]
+	setSGR [SetConsoleIntensity BoldIntensity]
+	setSGR [SetUnderlining SingleUnderline]
+	putStr value
+	setSGR [SetUnderlining NoUnderline]
 
 -- syntax highlighting:
 -- specifiy color of token types
@@ -407,42 +445,84 @@ tokenGetColor _                  = Blue -- Others: operators
 
 -- syntax highlighting:
 -- specify intensity of token types
-tokenGetIntensity :: Token -> ConsoleIntensity
-tokenGetIntensity (TKExec _)        = BoldIntensity
-tokenGetIntensity (TKSplit _)       = BoldIntensity
-tokenGetIntensity (TKFinally _)     = BoldIntensity
-tokenGetIntensity (TKLexError _ _)  = BoldIntensity
-tokenGetIntensity _                 = NormalIntensity
+tokenGetIntensity :: CurrentFile -> Token -> ConsoleIntensity
+tokenGetIntensity _ (TKExec _)        = BoldIntensity
+tokenGetIntensity _ (TKSplit _)       = BoldIntensity
+tokenGetIntensity _ (TKFinally _)     = BoldIntensity
+tokenGetIntensity _ (TKLexError _ _)  = BoldIntensity
+tokenGetIntensity f (TKName _ n)      = 
+	if elem n (procedureNames f) then BoldIntensity
+	else NormalIntensity
+tokenGetIntensity _ _                 = NormalIntensity
 
 -- jumps through all tokens on the screen and waits
 -- for a quarter second between each token
-highlightTokensPaused :: [Token] -> IO ()
-highlightTokensPaused []    = return ()
-highlightTokensPaused (h:t) = do
-	setEditorCursorPosition (tokenGetRow h) (tokenGetColumn h)
-	pause
-	highlightTokensPaused t
+--highlightTokensPaused :: [Token] -> IO ()
+--highlightTokensPaused []    = return ()
+--highlightTokensPaused (h:t) = do
+--	setEditorCursorPosition (tokenGetRow h) (tokenGetColumn h)
+--	pause
+--	highlightTokensPaused t
 
 -- invokes lexical analysis and highlights erroneous tokens, if any
 lexErrors :: CurrentFile -> IO ()
-lexErrors (CF _ fc _ _ _) = do
+lexErrors (CF _ fc _ _ _ parseTree syn) = do
 	let errors = alexScanErrors (fileContentsToString fc)
-	highlightTokensPaused errors
+	--highlightTokensPaused errors
+	return ()
 
 --------------------
 ---------------------- Parser related functions
 --------------------
 
+-- get a list of parsing errors for the current file
+parseErrors :: CurrentFile -> [Token]
+parseErrors (CF _ fc _ _ _ _ _) =
+	if not (null errors) then []
+	else
+		case parseResult of
+			Failed []     -> [TKName lastPos " "]
+			Failed tokens -> tokens
+			_             -> []
+	where
+		errors  = alexScanErrors (fileContentsToString fc)
+		tokens = alexScanTokens (fileContentsToString fc)
+		parseResult = parse tokens
+		lastRow = (length fc)-1
+		lastCol = (length (fc!!lastRow))-1
+		lastPos = (AlexPn 0 (lastRow+1) (lastCol+3))
+
+safeParse :: CurrentFile -> [Procedure]
+safeParse (CF _ fc _ _ _ _ _) =
+	if not (null errors) then []
+	else
+		case parseResult of
+			Failed tokens -> []
+			Ok p           -> p
+	where
+		errors  = alexScanErrors (fileContentsToString fc)
+		tokens = alexScanTokens (fileContentsToString fc)
+		parseResult = parse tokens
+
 -- parses the current editor contents
 -- and displays a success or error message on display
 parseFile :: CurrentFile -> String
-parseFile (CF _ fc _ _ _) =
+parseFile (CF _ fc _ _ _ parseTree syn) =
 	case parseResult of
-		Failed msg -> msg
-		_          -> "No parse errors detected"
+		Failed []     -> "Parse error - unexpected end of file"
+		Failed tokens -> ("Parse error at row " ++ (show ((tokenGetRow (tokens!!0))+1)) ++ ", column " ++ (show ((tokenGetColumn (tokens!!0))+1)))
+		_             -> "No parse errors detected"
 	where
 		tokens = alexScanTokens (fileContentsToString fc)
 		parseResult = parse tokens
+
+-- parse file and return procedure names
+procedureNames :: CurrentFile -> [String]
+procedureNames f =
+	map getProcedureName (getParseTree f)
+	where
+		getProcedureName (Procedure n _ _ _) = n
+
 
 --------------------
 ---------------------- Editor related functions
@@ -455,7 +535,7 @@ fileContentsToString (h:t) = h ++ "\n" ++ (fileContentsToString t)
 
 -- jumps the current cursor position for one line
 breakLine :: CurrentFile -> CurrentFile
-breakLine f@(CF n c pr pc m) = (CF n nc (pr+1) 0 m)
+breakLine f@(CF n c pr pc m parseTree syn) = (CF n nc (pr+1) 0 m parseTree syn)
 	where
 		nc = beginning ++ [firstHalf] ++ [secondHalf] ++ end
 		beginning = take pr c
@@ -466,7 +546,7 @@ breakLine f@(CF n c pr pc m) = (CF n nc (pr+1) 0 m)
 -- replaces the character at the current cursor position
 -- with the given character
 replaceCharacter :: CurrentFile -> Char -> CurrentFile
-replaceCharacter f@(CF n c pr pc m) ch =
+replaceCharacter f@(CF n c pr pc m parseTree syn) ch =
 	CF
 	n
 	(
@@ -480,11 +560,13 @@ replaceCharacter f@(CF n c pr pc m) ch =
 	pr
 	(pc+1)
 	m
+	parseTree
+	syn
 
 -- inserts the given character just before the current
 -- cursor position
 insertCharacter :: CurrentFile -> Char -> CurrentFile
-insertCharacter f@(CF n c pr pc m) ch =
+insertCharacter f@(CF n c pr pc m parseTree syn) ch =
 	CF
 	n
 	(
@@ -498,11 +580,13 @@ insertCharacter f@(CF n c pr pc m) ch =
 	pr
 	(pc+1)
 	m
+	parseTree
+	syn
 
 -- deletes the character at the current cursor position
 -- and shifts the rest of the line to the left
 deleteCharacter :: CurrentFile -> CurrentFile
-deleteCharacter f@(CF n c pr pc m) =
+deleteCharacter f@(CF n c pr pc m parseTree syn) =
 	CF
 	n
 	(
@@ -516,20 +600,22 @@ deleteCharacter f@(CF n c pr pc m) =
 	pr
 	pc
 	m
+	parseTree
+	syn
 
 -- inserts the given character in the given file row
 backDelete :: CurrentFile -> IO ()
-backDelete f@(CF _ _ 0 0 _) = doLoop f
-backDelete f@(CF n c pr 0 m) = do
+backDelete f@(CF _ _ 0 0 _ parseTree syn) = doLoop f
+backDelete f@(CF n c pr 0 m parseTree syn) = do
 	let npr = max 0 (pr-1)
 	let npc = length (c!!npr)
 	let nc = (take npr c) ++ [c!!npr ++ c!!pr] ++ (drop (pr+1) c)
-	let nf = (CF n nc npr npc m)
-	refreshRows nf [r | r <- [npr..(length nc)-1]]
+	let nf = (CF n nc npr npc m parseTree syn)
+	refreshRows nf [npr..(length nc)-1]
 	setLineNumberCursorPosition (length nc)
 	clearFromCursorToLineEnd
 	doLoop nf
-backDelete f@(CF n c pr pc m) = doLoop (deleteCharacter (CF n c pr (pc-1) m))
+backDelete f@(CF n c pr pc m parseTree syn) = doLoop (deleteCharacter (CF n c pr (pc-1) m parseTree syn))
 
 insertCharInFileRow :: FileRow -> Colnum -> Char -> FileRow
 insertCharInFileRow l i n = (take i l) ++ [n] ++ (drop i l)
