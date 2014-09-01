@@ -60,11 +60,11 @@ doLoop af@(CF n content pr pc m parseTree syn) = do
 	else return ()
 	let f = (CF n content pr pc m (safeParse af) (parseErrors af))
 	printFileHighlighted f
-	highlightSyntaxErrors f
 	doLoopBody f
 
 doLoopBody :: CurrentFile -> IO ()
 doLoopBody f@(CF n content pr pc m parseTree syn) = do
+	highlightSyntaxErrors f
 	setEditorCursorPosition pr pc
 	c <- getChar
 	case (ord c) of
