@@ -22,13 +22,17 @@ class CommandTest extends PHPUnit_Framework_TestCase{
             "y" => new ProgVariable("y",null)
         );
 
+        /*
+         * Windows Commands:
+         * http://acidx.net/wordpress/2012/09/retrieving-system-information-via-command-line-on-windows/
+         */
         $execContext = new ProgProcedureCommandContext(
                         array(
                                 "x",
                                 "y"
                         ),
-                        "sysctl",
-                        "-n machdep.cpu.brand_string",
+                        "wmic",
+                        "baseboard",
                         $externalVars
                         );
 
@@ -41,6 +45,8 @@ class CommandTest extends PHPUnit_Framework_TestCase{
 
             //print_r($execContext);
         }
+        // print $externalVars["x"]->getValue();
+        // print $externalVars["y"]->getValue();
         $this->assertNotNull($externalVars["x"]->getValue());
         $this->assertNotNull($externalVars["y"]->getValue());
     }
