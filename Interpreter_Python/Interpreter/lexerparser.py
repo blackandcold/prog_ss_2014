@@ -34,8 +34,7 @@ reserved = {'finally': 'TKFinally',
             'split': 'TKSplit',
 }
 tokens = [
-             'TKProcedure',
-             'TKProcCall',
+             #'TKProcedure',
              'TKEquals',
              'TKNotEquals',
              'TKColon',
@@ -44,11 +43,8 @@ tokens = [
              'TKMinus',
              'TKAssignment',
              'TKSemicolon',
-             'TKStringTerminal',
              'TKName',
-             'TKString',
-             #'TKVariable',
-             'TKDollar'] + list(reserved.values())
+             'TKString',] + list(reserved.values())
 
 # Regular expression rules for simple tokens
 t_TKSemicolon = r'\;'
@@ -57,14 +53,14 @@ t_TKOpenBracket = r'\{'
 t_TKCloseBracket = r'\}'
 
 
-def t_TKPrecedure(t):
-    r'([a-zA-Z].*?)\s?-\s?("[^\n]+")\s?\{\s*(.+?;)\s*\}'
-    return t
+#def t_TKPrecedure(t):
+#    r'([a-zA-Z].*?)\s?-\s?("[^\n]+")\s?\{\s*(.+?;)\s*\}'
+#    return t
 
 
-def t_TKProcCall(t):
-    r'(?<=\n)([a-zA-Z].*?) = (?:([a-zA-Z]\w*?) +(".+?");)'
-    return t
+#def t_TKProcCall(t):
+#    r'(?<=\n)([a-zA-Z].*?) = (?:([a-zA-Z]\w*?) +(".+?");)'
+#    return t
 
 #def t_TKVariable(self, t):
 #    r'(?<=\$)[A-Za-z]\w*(?=\$)'
@@ -118,13 +114,69 @@ import PLY.lex as lex
 
 # Build the lexer
 lex.lex()
-#lexer = lex.lex()
-#lexer.input(data)
-#
-#while True:
-#             tok = lexer.token()
-#             if not tok: break
-#             print tok
+lexer = lex.lex()
+lexer.input(data)
+
+while True:
+             tok = lexer.token()
+             if not tok: break
+             print tok
 
 
 ######### TODO Parsing rules
+
+# dictionary of names of variable
+varnames = { }
+procname = { }
+
+def p_program(p):
+    ''' program : procedure
+                | assignment
+    '''
+
+def p_procedure(p):
+    ''' procedure : TKName valuelist TKMinus valuelist TKOpenBracket guardedcommand TKCloseBracket'''
+    pass
+
+def p_valuelist(p):
+    ''' valuelist : valuelist TKString
+                  | TKString
+    '''
+    pass
+
+def p_guardedcommand(p):
+    ''' guardedcommand : guard TKColon guardedcommand
+                       | guard TKColon command TKSemicolon
+    '''
+
+def p_guard(p):
+    ''' guard : TKName
+            | TKName TKEquals TKString
+            | TKName TKNotEquals TKString
+            | TKName TKFinally
+    '''
+    # TODO check bedingungen
+    pass
+
+def p_command(p):
+    ''' command : assignment
+                | TKName TKAssignment TKExec valuelist
+                | TKName TKAssignment TKSplit valuelist
+                | TKName TKAssignment valuelist
+    '''
+    pass
+
+def p_assignment(p):
+    '''assignment : TKName TKAssignment valuelist TKSemicolon
+                  | TKName TKAssignment TKName valuelist TKSemicolon'''
+    # TODO assign TKname value of list
+    pass
+
+def p_error(p):
+    print "Syntax error at '%s'" % p.value
+
+
+import PLY.yacc as yacc
+yparser = yacc.yacc()
+
+yparser.parse(data)
