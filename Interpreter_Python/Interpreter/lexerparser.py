@@ -1,3 +1,4 @@
+__author__ = 'Johannes'
 # ------------------------------------------------------------
 # lexerparser.py
 #
@@ -6,177 +7,176 @@
 # ------------------------------------------------------------
 
 
-# Test it out
-data = '''
-test a b - "$out$"{
-    out = exec "IF $a$ GEQ $b$ (ECHO 1) ELSE (ECHO 0)"
-}
-
-maxnum a b c - "$max$" {
-    ab = test "$a$" "$b$" ;
-    bc = exec "IF $b$ GEQ $c$ (ECHO 1) ELSE (ECHO 0)";
-    ab == "0" : bc == "0" : max = "$c$";
-    ab == "0" : bc == "1" : max = "$b$";
-    ab == "1" : bc == "1" : max = "$a$";
-    ab == "1" : bc == "0" : ac = exec "IF $a$ GEQ $c$ (ECHO 1) ELSE (ECHO 0)";
-    ac == "0" : max = "$c$";
-    ac == "1" : max = "$a$";
-    finally : max = "error";
-}
-
-out = maxnum "2" "6" "7";
-outn = maxnum "4" "2" "3";
-outm = maxnum "2" "2" "2";
-'''
-
-reserved = {'finally': 'TKFinally',
-            'exec': 'TKExec',
-            'split': 'TKSplit',
-}
-tokens = [
-             #'TKProcedure',
-             'TKEquals',
-             'TKNotEquals',
-             'TKColon',
-             'TKOpenBracket',
-             'TKCloseBracket',
-             'TKMinus',
-             'TKAssignment',
-             'TKSemicolon',
-             'TKName',
-             'TKString',] + list(reserved.values())
-
-# Regular expression rules for simple tokens
-t_TKSemicolon = r'\;'
-t_TKColon = r'\:'
-t_TKOpenBracket = r'\{'
-t_TKCloseBracket = r'\}'
-
-
-#def t_TKPrecedure(t):
-#    r'([a-zA-Z].*?)\s?-\s?("[^\n]+")\s?\{\s*(.+?;)\s*\}'
-#    return t
-
-
-#def t_TKProcCall(t):
-#    r'(?<=\n)([a-zA-Z].*?) = (?:([a-zA-Z]\w*?) +(".+?");)'
-#    return t
-
-#def t_TKVariable(self, t):
-#    r'(?<=\$)[A-Za-z]\w*(?=\$)'
-#    return t
-
-def t_TKName(t):
-    r'[a-zA-Z_][a-zA-Z0-9_]*'
-    t.type = reserved.get(t.value, 'TKName')
-    return t
-
-
-def t_TKEquals(t):
-    r'\s?==\s?'
-    return t
-
-
-def t_TKNotEquals(t):
-    r'\s?!=\s?'
-    return t
-
-
-def t_TKMinus(t):
-    r'\s?-\s?'
-    return t
-
-
-def t_TKString(t):
-    r'(?<=\s)\".*?\"(?<!\s)'
-    return t
-
-
-def t_newline(t):
-    r'\n+'
-    t.lexer.lineno += len(t.value)
-
-
-def t_TKAssignment(t):
-    r'\s?=\s?'
-    return t
-
-# A string containing ignored characters (spaces and tabs)
-t_ignore = ' \t'
-
-# Error handling rule
-def t_error(t):
-    print "Illegal character '%s'" % t.value[0]
-    t.lexer.skip(1)
-
 #import lexer
 import PLY.lex as lex
 
-# Build the lexer
-lex.lex()
-lexer = lex.lex()
-lexer.input(data)
+class MyLexer:
+    def __init__(self):
+        self.lexer = lex.lex(module=self)
+    reserved = {'finally': 'TKFinally',
+                'exec': 'TKExec',
+                'split': 'TKSplit',
+    }
+    tokens = [
+                 'TKEquals',
+                 'TKNotEquals',
+                 'TKColon',
+                 'TKOpenBracket',
+                 'TKCloseBracket',
+                 'TKMinus',
+                 'TKAssignment',
+                 'TKSemicolon',
+                 'TKName',
+                 'TKString'] + list(reserved.values())
 
-while True:
-             tok = lexer.token()
+    # Regular expression rules for simple tokens
+    t_TKSemicolon = r'\;'
+    t_TKColon = r'\:'
+    t_TKOpenBracket = r'\{'
+    t_TKCloseBracket = r'\}'
+    t_TKMinus = r'\-'
+
+    def t_TKName(self, t):
+        r'[a-zA-Z_][a-zA-Z0-9_]*'
+        t.type = self.reserved.get(t.value, 'TKName')
+        return t
+
+    def t_TKEquals(self, t):
+        r'\s?==\s?'
+        return t
+
+    def t_COMMENT(self, t):
+        r'\#.*'
+        pass
+        # No return value. Token discarded
+
+    def t_TKNotEquals(self, t):
+        r'\s?!=\s?'
+        return t
+
+    def t_TKString(self, t):
+        r'(?<=\s)\".*?\"(?<!\s)'
+        return t
+
+    def t_newline(self, t):
+        r'\n+'
+        t.lexer.lineno += len(t.value)
+
+    def t_TKAssignment(self, t):
+        r'\s?=\s?'
+        return t
+
+    # A string containing ignored characters (spaces and tabs)
+    t_ignore = ' \t'
+
+    # Error handling rule
+    def t_error(self, t):
+        print "Illegal character '%s'" % t.value[0]
+        t.lexer.skip(1)
+
+    # Build the lexer
+    def build(self, **kwargs):
+        self.lexer = lex.lex(module=self, **kwargs)
+
+    # Test it output
+    def test(self,data):
+        self.lexer.input(data)
+        while True:
+             tok = self.lexer.token()
              if not tok: break
              print tok
 
 
-######### TODO Parsing rules
-
-# dictionary of names of variable
-varnames = { }
-procname = { }
-
-def p_program(p):
-    ''' program : procedure
-                | assignment
-    '''
-
-def p_procedure(p):
-    ''' procedure : TKName valuelist TKMinus valuelist TKOpenBracket guardedcommand TKCloseBracket'''
-    pass
-
-def p_valuelist(p):
-    ''' valuelist : valuelist TKString
-                  | TKString
-    '''
-    pass
-
-def p_guardedcommand(p):
-    ''' guardedcommand : guard TKColon guardedcommand
-                       | guard TKColon command TKSemicolon
-    '''
-
-def p_guard(p):
-    ''' guard : TKName
-            | TKName TKEquals TKString
-            | TKName TKNotEquals TKString
-            | TKName TKFinally
-    '''
-    # TODO check bedingungen
-    pass
-
-def p_command(p):
-    ''' command : assignment
-                | TKName TKAssignment TKExec valuelist
-                | TKName TKAssignment TKSplit valuelist
-                | TKName TKAssignment valuelist
-    '''
-    pass
-
-def p_assignment(p):
-    '''assignment : TKName TKAssignment valuelist TKSemicolon
-                  | TKName TKAssignment TKName valuelist TKSemicolon'''
-    # TODO assign TKname value of list
-    pass
-
-def p_error(p):
-    print "Syntax error at '%s'" % p.value
-
-
 import PLY.yacc as yacc
-yparser = yacc.yacc()
 
-yparser.parse(data)
+######### Parsing rules
+class MyParser:
+    def __init__(self):
+        self.lexer = MyLexer()
+        self.tokens = self.lexer.tokens
+        self.parser = yacc.yacc(module=self, debug=True)
+
+    def p_program(self, p):
+        ''' program : program procedure
+                    | procedure'''
+        if (len(p) == 3):
+             p[0] = p[1] + [p[2]]
+        elif (len(p) == 2):
+            p[0] = [p[1]]
+
+    def p_procedure(self, p):
+        '''procedure : valuelist TKAssignment TKName parameterlist TKSemicolon
+                     | TKName valuelist TKMinus parameterlist TKOpenBracket guardedcommandlist TKCloseBracket'''
+        if (len(p) == 6):
+            p[0] = ('proccall', (p[1], p[2], p[3], p[4]))
+        elif (len(p) == 8):
+            p[0] = ('procscript', (p[1], p[2], p[3], p[4], p[5], p[6], p[7]))
+
+    def p_guardedcommandlist(self, p):
+        ''' guardedcommandlist : guardedcommandlist guardedcommand
+                               | guardedcommand
+        '''
+        if (len(p) == 2):
+            p[0] = p[1]
+        elif (len(p) == 3):
+            p[0] = p[1] + p[2]
+
+    def p_guardedcommand(self, p):
+        '''guardedcommand : guard TKColon guardedcommand
+                          | guard TKColon command
+                          | command TKSemicolon
+        '''
+        if (len(p) == 3):
+            p[0] = [p[1]]
+        elif (len(p) == 4):
+            p[0] = [p[1]] + p[3]
+
+    #  TODO Double return valies
+    def p_command(self, p):
+        '''command : valuelist TKAssignment TKName parameterlist
+                   | valuelist TKAssignment TKExec parameterlist
+                   | valuelist TKAssignment TKSplit parameterlist
+                   | valuelist TKAssignment TKString
+        '''
+        if len(p) == 5:
+            p[0] = ('commandexecsplitproc', p[1], p[2], p[3], p[4])
+        elif len(p) == 4:
+            p[0] = ('commandassignment', p[1], p[2], p[3])
+
+    def p_guard(self, p):
+        '''guard : TKName TKEquals TKString
+                 | TKName TKNotEquals TKString
+                 | TKFinally
+        '''
+        if len(p) == 4:
+            p[0] = ('compairguard', p[1], p[2], p[3])
+        elif len(p) == 2:
+            p[0] = ('finallyguard', p[1])
+
+    def p_valuelist(self, p):
+        ''' valuelist : valuelist TKName
+                      | TKName
+        '''
+        if (len(p) == 2):
+            p[0] = [p[1]]
+        elif (len(p) == 3):
+            p[0] = p[1]+[p[2]]
+
+    def p_parameterlist(self, p):
+        ''' parameterlist : parameterlist TKString
+                          | TKString
+        '''
+        if (len(p) == 2):
+            p[0] = [p[1]]
+        if (len(p) == 3):
+            p[0] = p[1]+[p[2]]
+
+    def p_error(self, p):
+        print "Syntax error at '%s'" % p.value
+
+    def parse(self, data):
+        if data:
+            return self.parser.parse(data, self.lexer.lexer, 0, 0, None)
+        else:
+            return []
+
